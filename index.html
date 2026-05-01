@@ -1,0 +1,3606 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+<title>KIMS Ecity — Anaesthesia Case Registry</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+/* ============================================================
+   DESIGN TOKENS
+   ============================================================ */
+:root {
+  /* Ecity brand: deep burgundy primary + warm gold accent */
+  --navy: #800020;
+  --navy-dark: #5C0017;
+  --navy-light: #A83248;
+  --teal: #C9A14A;
+  --teal-dark: #A6822F;
+  --teal-light: #DFB868;
+  --bg: #FBF6F2;
+  --card: #FFFFFF;
+  --border: #E8DCD2;
+  --text: #2B1418;
+  --text-muted: #6B4A52;
+  --text-soft: #9B8088;
+  --danger: #C62828;
+  --danger-bg: #FCEBEA;
+  --warn: #B8860B;
+  --success: #2E7D32;
+  --success-bg: #E8F5E9;
+  --shadow-sm: 0 1px 2px rgba(128,0,32,0.06);
+  --shadow: 0 2px 8px rgba(128,0,32,0.10);
+  --shadow-lg: 0 8px 24px rgba(128,0,32,0.14);
+  --radius: 10px;
+  --radius-sm: 6px;
+  --radius-lg: 14px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
+body {
+  font-family: 'DM Sans', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+  font-size: 15px;
+  line-height: 1.5;
+}
+.mono { font-family: 'DM Mono', monospace; }
+
+button { font-family: inherit; cursor: pointer; border: none; background: none; color: inherit; }
+input, select, textarea { font-family: inherit; font-size: 15px; color: var(--text); }
+
+/* ============================================================
+   LOGIN SCREEN
+   ============================================================ */
+#loginScreen {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: linear-gradient(135deg, var(--navy) 0%, var(--navy-light) 100%);
+  position: relative;
+  overflow: hidden;
+}
+#loginScreen::before {
+  content: '';
+  position: absolute;
+  top: -40%;
+  right: -20%;
+  width: 600px;
+  height: 600px;
+  background: radial-gradient(circle, rgba(201,161,74,0.25) 0%, transparent 70%);
+  pointer-events: none;
+}
+#loginScreen::after {
+  content: '';
+  position: absolute;
+  bottom: -30%;
+  left: -10%;
+  width: 500px;
+  height: 500px;
+  background: radial-gradient(circle, rgba(201,161,74,0.18) 0%, transparent 70%);
+  pointer-events: none;
+}
+.login-card {
+  background: var(--card);
+  border-radius: var(--radius-lg);
+  padding: 40px 32px;
+  width: 100%;
+  max-width: 440px;
+  box-shadow: var(--shadow-lg);
+  position: relative;
+  z-index: 1;
+}
+.login-logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 16px;
+  background: var(--teal);
+  color: white;
+  font-size: 30px;
+  margin: 0 auto 20px;
+}
+.login-hospital {
+  text-align: center;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--teal);
+  text-transform: uppercase;
+  letter-spacing: 1.4px;
+  margin-bottom: 8px;
+}
+.login-card h1 {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--navy);
+  text-align: center;
+  margin-bottom: 4px;
+  letter-spacing: -0.3px;
+}
+.login-card .sub {
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 13px;
+  margin-bottom: 28px;
+}
+.login-card label {
+  display: block;
+  font-weight: 500;
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+.login-card select {
+  width: 100%;
+  padding: 14px 16px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  background: white;
+  margin-bottom: 20px;
+  outline: none;
+  transition: border-color 0.15s;
+  font-weight: 500;
+}
+.login-card select:focus { border-color: var(--teal); }
+.login-btn {
+  width: 100%;
+  padding: 14px;
+  background: var(--teal);
+  color: white;
+  border-radius: var(--radius);
+  font-weight: 600;
+  font-size: 15px;
+  letter-spacing: 0.2px;
+  transition: background 0.15s, transform 0.1s;
+}
+.login-btn:hover { background: var(--teal-dark); }
+.login-btn:active { transform: scale(0.98); }
+
+.connection-status {
+  text-align: center;
+  font-size: 11px;
+  margin-top: 14px;
+  padding: 8px;
+  border-radius: 6px;
+  font-weight: 500;
+}
+.connection-status.connected { color: var(--success); background: var(--success-bg); }
+.connection-status.disconnected { color: var(--warn); background: #FFF4DC; }
+.connection-status.checking { color: var(--text-muted); background: var(--bg); }
+
+/* ============================================================
+   TOP NAVIGATION
+   ============================================================ */
+.nav {
+  background: var(--navy);
+  color: white;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+.nav-inner {
+  max-width: 1400px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  height: 56px;
+  gap: 4px;
+}
+.nav-brand {
+  font-weight: 700;
+  font-size: 14px;
+  letter-spacing: -0.2px;
+  margin-right: auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  white-space: nowrap;
+  overflow: hidden;
+}
+.nav-brand-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+  background: var(--teal);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  flex-shrink: 0;
+}
+.nav-brand-text { display: flex; flex-direction: column; line-height: 1.1; min-width: 0; }
+.nav-brand-hospital { font-size: 10px; color: var(--teal-light); font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; }
+.nav-brand-name { font-size: 13px; overflow: hidden; text-overflow: ellipsis; }
+.nav-btn {
+  padding: 8px 14px;
+  border-radius: 8px;
+  color: rgba(255,255,255,0.8);
+  font-weight: 500;
+  font-size: 14px;
+  transition: background 0.15s, color 0.15s;
+  white-space: nowrap;
+}
+.nav-btn:hover { color: white; background: rgba(255,255,255,0.08); }
+.nav-btn.active {
+  background: var(--teal);
+  color: white;
+}
+.nav-user {
+  padding: 8px 12px;
+  font-size: 12px;
+  color: rgba(255,255,255,0.7);
+  display: none;
+}
+@media (min-width: 760px) {
+  .nav-user { display: inline-flex; align-items: center; gap: 6px; }
+}
+
+@media (max-width: 520px) {
+  .nav-brand-hospital { display: none; }
+  .nav-brand-name { font-size: 12px; }
+  .nav-btn { padding: 8px 10px; font-size: 13px; }
+  .nav-btn .lbl-long { display: none; }
+}
+
+/* Sync indicator in nav */
+.sync-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--success); margin-left: 6px;
+  box-shadow: 0 0 0 2px rgba(46,125,50,0.2);
+}
+.sync-dot.syncing { background: var(--warn); animation: pulse 1s infinite; }
+.sync-dot.error { background: var(--danger); }
+@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+/* ============================================================
+   PAGE CONTAINER
+   ============================================================ */
+.page {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 20px 16px 60px;
+}
+.page-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--navy);
+  margin-bottom: 4px;
+  letter-spacing: -0.3px;
+}
+.page-sub {
+  color: var(--text-muted);
+  font-size: 14px;
+  margin-bottom: 20px;
+}
+
+/* Setup banner (when API_URL isn't configured) */
+.setup-banner {
+  max-width: 720px;
+  margin: 0 auto 18px;
+  padding: 14px 16px;
+  background: #FFF4DC;
+  border: 1.5px solid #FFB74D;
+  border-radius: var(--radius);
+  color: #6D4C00;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.setup-banner b { color: #5D3A00; }
+.setup-banner code { background: rgba(0,0,0,0.06); padding: 2px 6px; border-radius: 3px; font-family: 'DM Mono', monospace; font-size: 12px; }
+
+/* ============================================================
+   CASE ENTRY FORM — accordion sections
+   ============================================================ */
+.form-wrapper {
+  max-width: 720px;
+  margin: 0 auto;
+}
+.accordion {
+  background: var(--card);
+  border-radius: var(--radius);
+  margin-bottom: 12px;
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+.accordion.open { box-shadow: var(--shadow); }
+.accordion-head {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 18px;
+  background: white;
+  text-align: left;
+  transition: background 0.15s;
+}
+.accordion-head:hover { background: #FDF9F6; }
+.accordion.open .accordion-head { border-bottom: 1px solid var(--border); }
+.accordion-title {
+  font-weight: 600;
+  font-size: 15px;
+  color: var(--navy);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.accordion-num {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--teal);
+  color: white;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 600;
+}
+.accordion-num.optional { background: var(--text-soft); }
+.accordion-mandatory {
+  font-size: 10px;
+  background: var(--danger-bg);
+  color: var(--danger);
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+}
+.accordion-optional {
+  font-size: 10px;
+  background: #E3F2FD;
+  color: #1565C0;
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+}
+.chevron {
+  transition: transform 0.25s;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+.accordion.open .chevron { transform: rotate(90deg); }
+.accordion-body {
+  display: none;
+  padding: 18px;
+  animation: slideDown 0.25s ease-out;
+}
+.accordion.open .accordion-body { display: block; }
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.field { margin-bottom: 16px; }
+.field-label {
+  display: block;
+  font-weight: 500;
+  font-size: 13px;
+  color: var(--text);
+  margin-bottom: 8px;
+}
+.field-label .req { color: var(--danger); }
+.field-label .opt { color: var(--text-soft); font-weight: 400; font-size: 12px; }
+.input, select.input, textarea.input {
+  width: 100%;
+  padding: 11px 13px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: white;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.input:focus, select.input:focus, textarea.input:focus { border-color: var(--teal); }
+.input[readonly] { background: #F6EEEA; color: var(--text-muted); }
+
+.toggle-pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.tog {
+  padding: 14px 10px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: white;
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--text-muted);
+  transition: all 0.15s;
+}
+.tog:hover { border-color: var(--teal); }
+.tog.on {
+  background: var(--teal);
+  color: white;
+  border-color: var(--teal);
+}
+
+.pill-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.pill {
+  padding: 10px 14px;
+  border: 1.5px solid var(--border);
+  border-radius: 22px;
+  background: white;
+  font-weight: 500;
+  font-size: 13px;
+  color: var(--text-muted);
+  transition: all 0.15s;
+}
+.pill:hover { border-color: var(--teal); }
+.pill.on {
+  background: var(--teal);
+  color: white;
+  border-color: var(--teal);
+}
+.pill.small { padding: 8px 12px; font-size: 12px; }
+
+.chk-group { margin-bottom: 18px; }
+.chk-group-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--teal);
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  margin-bottom: 10px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border);
+}
+.chk-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 6px;
+}
+@media (min-width: 560px) {
+  .chk-grid { grid-template-columns: 1fr 1fr; }
+}
+.chk {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 11px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: white;
+  cursor: pointer;
+  transition: all 0.12s;
+  font-size: 13px;
+  line-height: 1.3;
+}
+.chk:hover { border-color: var(--teal); background: #FBF3F1; }
+.chk input { display: none; }
+.chk .box {
+  width: 18px;
+  height: 18px;
+  border: 1.5px solid var(--border);
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: white;
+  transition: all 0.15s;
+}
+.chk .box::after {
+  content: '✓';
+  color: white;
+  font-size: 12px;
+  font-weight: 700;
+  opacity: 0;
+}
+.chk input:checked ~ .box {
+  background: var(--teal);
+  border-color: var(--teal);
+}
+.chk input:checked ~ .box::after { opacity: 1; }
+.chk input:checked ~ .lbl { color: var(--navy); font-weight: 500; }
+
+.dur {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 220px;
+}
+.dur input {
+  width: 70px;
+  text-align: center;
+  font-family: 'DM Mono', monospace;
+  font-size: 17px;
+  font-weight: 500;
+  padding: 11px 8px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  outline: none;
+}
+.dur input:focus { border-color: var(--teal); }
+.dur-sep { font-size: 18px; font-weight: 700; color: var(--text-muted); }
+.dur-unit { font-size: 12px; color: var(--text-muted); display: block; text-align: center; margin-top: 4px; }
+
+.row-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.block-guidance {
+  background: #FBF3F1;
+  border: 1.5px solid var(--teal-light);
+  border-radius: var(--radius-sm);
+  padding: 12px;
+  margin-top: 10px;
+}
+.block-guidance.hidden { display: none; }
+.block-guidance-title { font-size: 12px; font-weight: 600; color: var(--teal-dark); margin-bottom: 8px; }
+.radio-grp { display: flex; gap: 8px; flex-wrap: wrap; }
+.radio {
+  padding: 7px 12px;
+  border: 1.5px solid var(--border);
+  background: white;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.12s;
+}
+.radio.on { background: var(--teal); color: white; border-color: var(--teal); }
+
+/* Block detail expand panel (inside each checked block) */
+.block-item-wrap {
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  margin-bottom: 6px;
+  background: white;
+  transition: border-color 0.15s;
+}
+.block-item-wrap.checked { border-color: var(--teal-light); }
+.block-item-wrap.expanded { border-color: var(--teal); background: #FBF3F1; }
+.block-item-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 11px;
+  cursor: pointer;
+  font-size: 13px;
+}
+.block-item-head .box {
+  width: 18px; height: 18px;
+  border: 1.5px solid var(--border);
+  border-radius: 4px;
+  display: inline-flex; align-items: center; justify-content: center;
+  flex-shrink: 0; background: white;
+  transition: all 0.15s;
+}
+.block-item-head .box::after { content: '✓'; color: white; font-size: 12px; font-weight: 700; opacity: 0; }
+.block-item-wrap.checked .block-item-head .box { background: var(--teal); border-color: var(--teal); }
+.block-item-wrap.checked .block-item-head .box::after { opacity: 1; }
+.block-item-wrap.checked .block-item-head .lbl { color: var(--navy); font-weight: 500; }
+.block-item-head .lbl { flex: 1; }
+.block-detail-toggle {
+  font-size: 11px;
+  color: var(--teal);
+  font-weight: 600;
+  padding: 3px 9px;
+  border: 1px solid var(--teal-light);
+  border-radius: 12px;
+  background: white;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s;
+  white-space: nowrap;
+}
+.block-item-wrap.checked .block-detail-toggle { opacity: 1; pointer-events: auto; }
+.block-detail-toggle:hover { background: var(--teal); color: white; }
+.block-detail-toggle.active { background: var(--teal); color: white; }
+
+.block-detail-body {
+  display: none;
+  padding: 12px 12px 14px;
+  border-top: 1px solid var(--teal-light);
+  background: #FBF3F1;
+}
+.block-item-wrap.expanded .block-detail-body { display: block; }
+.block-detail-row {
+  display: grid;
+  grid-template-columns: 90px 1fr;
+  gap: 8px;
+  align-items: start;
+  margin-bottom: 10px;
+}
+.block-detail-row .k {
+  font-size: 11px; font-weight: 600; color: var(--text-muted);
+  text-transform: uppercase; letter-spacing: 0.4px;
+  padding-top: 6px;
+}
+.mini-pills { display: flex; flex-wrap: wrap; gap: 5px; }
+.mini-pill {
+  padding: 5px 10px;
+  border: 1px solid var(--border);
+  background: white;
+  border-radius: 15px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.1s;
+}
+.mini-pill:hover { border-color: var(--teal); }
+.mini-pill.on { background: var(--teal); color: white; border-color: var(--teal); }
+.mini-pill.danger.on { background: var(--danger); border-color: var(--danger); }
+
+.num-input-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.num-input {
+  width: 72px;
+  padding: 6px 8px;
+  border: 1.5px solid var(--border);
+  border-radius: 5px;
+  font-family: 'DM Mono', monospace;
+  font-size: 13px;
+  text-align: center;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.num-input:focus { border-color: var(--teal); }
+.num-input-label { font-size: 11px; color: var(--text-muted); font-weight: 500; }
+.text-input-small {
+  padding: 6px 10px;
+  border: 1.5px solid var(--border);
+  border-radius: 5px;
+  font-size: 12px;
+  outline: none;
+  flex: 1;
+  min-width: 100px;
+}
+.text-input-small:focus { border-color: var(--teal); }
+
+.none-btn {
+  width: 100%;
+  padding: 13px;
+  background: var(--success-bg);
+  color: var(--success);
+  border: 1.5px solid #A5D6A7;
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+  font-size: 14px;
+  margin-bottom: 14px;
+  transition: all 0.15s;
+}
+.none-btn.on {
+  background: var(--success);
+  color: white;
+  border-color: var(--success);
+}
+
+.save-btn {
+  width: 100%;
+  padding: 16px;
+  background: var(--teal);
+  color: white;
+  border-radius: var(--radius);
+  font-weight: 700;
+  font-size: 15px;
+  letter-spacing: 0.5px;
+  margin-top: 20px;
+  box-shadow: var(--shadow);
+  transition: all 0.15s;
+}
+.save-btn:hover { background: var(--teal-dark); transform: translateY(-1px); }
+.save-btn:active { transform: translateY(0); }
+.save-btn:disabled { background: var(--text-soft); cursor: not-allowed; transform: none; }
+
+.textarea {
+  width: 100%;
+  padding: 12px 13px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: white;
+  outline: none;
+  resize: vertical;
+  min-height: 90px;
+  font-size: 14px;
+  line-height: 1.5;
+  transition: border-color 0.15s;
+}
+.textarea:focus { border-color: var(--teal); }
+.char-count { font-size: 11px; color: var(--text-soft); text-align: right; margin-top: 4px; }
+
+/* ============================================================
+   TOAST
+   ============================================================ */
+.toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%) translateY(120px);
+  padding: 12px 22px;
+  border-radius: var(--radius);
+  background: var(--success);
+  color: white;
+  font-weight: 600;
+  font-size: 14px;
+  box-shadow: var(--shadow-lg);
+  z-index: 1000;
+  opacity: 0;
+  transition: all 0.3s cubic-bezier(0.2, 0.9, 0.4, 1.2);
+  pointer-events: none;
+  max-width: 90vw;
+}
+.toast.show {
+  transform: translateX(-50%) translateY(0);
+  opacity: 1;
+}
+.toast.error { background: var(--danger); }
+
+/* ============================================================
+   MY CASES — card list
+   ============================================================ */
+.case-card {
+  background: var(--card);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  margin-bottom: 10px;
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+  border: 1px solid var(--border);
+  transition: all 0.15s;
+}
+.case-card:hover { box-shadow: var(--shadow); border-color: var(--teal-light); }
+.case-card-top {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.case-date {
+  font-weight: 600;
+  color: var(--navy);
+  font-size: 14px;
+  font-family: 'DM Mono', monospace;
+}
+.case-badges { display: flex; gap: 6px; flex-wrap: wrap; }
+.badge {
+  display: inline-block;
+  padding: 3px 9px;
+  border-radius: 11px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+}
+.badge-teal { background: #F4E8C8; color: var(--teal-dark); }
+.badge-navy { background: #E8EEF6; color: var(--navy); }
+.badge-emergency { background: #FFF4DC; color: #8B5E1A; }
+.badge-elective { background: #E3F2FD; color: #1565C0; }
+.badge-complications { background: var(--danger-bg); color: var(--danger); }
+.case-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+.case-meta b { color: var(--text); font-weight: 500; }
+
+.case-detail-body {
+  display: none;
+  padding-top: 12px;
+  margin-top: 10px;
+  border-top: 1px solid var(--border);
+  font-size: 13px;
+  line-height: 1.6;
+}
+.case-card.expanded .case-detail-body { display: block; }
+.detail-row {
+  display: flex;
+  gap: 10px;
+  padding: 4px 0;
+}
+.detail-row .k { min-width: 130px; color: var(--text-muted); font-weight: 500; }
+.detail-row .v { flex: 1; color: var(--text); }
+.detail-chips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+.detail-chip {
+  font-size: 11px;
+  background: var(--bg);
+  color: var(--text);
+  padding: 3px 8px;
+  border-radius: 10px;
+}
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--text-muted);
+}
+.empty-state-icon {
+  font-size: 48px;
+  margin-bottom: 12px;
+  opacity: 0.4;
+}
+
+/* ============================================================
+   DASHBOARD
+   ============================================================ */
+.filter-bar {
+  background: var(--card);
+  border-radius: var(--radius);
+  margin-bottom: 18px;
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+.filter-head {
+  width: 100%;
+  padding: 14px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: 600;
+  color: var(--navy);
+}
+.filter-body {
+  display: none;
+  padding: 4px 16px 16px;
+  border-top: 1px solid var(--border);
+}
+.filter-bar.open .filter-body { display: block; }
+.filter-bar.open .chevron { transform: rotate(90deg); }
+.filter-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  margin-top: 14px;
+}
+@media (min-width: 640px) { .filter-grid { grid-template-columns: 1fr 1fr; } }
+@media (min-width: 900px) { .filter-grid { grid-template-columns: repeat(5, 1fr); } }
+
+.filter-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 14px;
+  flex-wrap: wrap;
+}
+.btn {
+  padding: 9px 16px;
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+  font-size: 13px;
+  transition: all 0.15s;
+  border: 1.5px solid transparent;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.btn-primary { background: var(--teal); color: white; }
+.btn-primary:hover { background: var(--teal-dark); }
+.btn-ghost { background: transparent; color: var(--text-muted); border-color: var(--border); }
+.btn-ghost:hover { border-color: var(--teal); color: var(--teal); }
+.btn-navy { background: var(--navy); color: white; }
+.btn-navy:hover { background: var(--navy-dark); }
+
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  margin-bottom: 20px;
+}
+@media (min-width: 600px) { .summary-grid { grid-template-columns: repeat(3, 1fr); } }
+@media (min-width: 900px) { .summary-grid { grid-template-columns: repeat(6, 1fr); } }
+
+.stat-card {
+  background: var(--card);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
+  position: relative;
+  overflow: hidden;
+}
+.stat-card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 3px;
+  background: var(--teal);
+}
+.stat-card.navy::before { background: var(--navy); }
+.stat-card.red::before { background: var(--danger); }
+.stat-label {
+  font-size: 11px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+.stat-value {
+  font-family: 'DM Mono', monospace;
+  font-size: 26px;
+  font-weight: 500;
+  color: var(--navy);
+  line-height: 1.1;
+  letter-spacing: -0.5px;
+}
+.stat-suffix { font-size: 13px; color: var(--text-muted); margin-left: 3px; }
+
+.chart-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 14px;
+  margin-bottom: 20px;
+}
+@media (min-width: 800px) { .chart-grid { grid-template-columns: 1fr 1fr; } }
+@media (min-width: 1200px) { .chart-grid { grid-template-columns: repeat(3, 1fr); } }
+
+.chart-card {
+  background: var(--card);
+  border-radius: var(--radius);
+  padding: 16px;
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
+  min-height: 300px;
+  display: flex;
+  flex-direction: column;
+}
+.chart-card h3 {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--navy);
+  margin-bottom: 12px;
+  letter-spacing: -0.1px;
+}
+.chart-card .chart-wrap {
+  position: relative;
+  flex: 1;
+  min-height: 220px;
+}
+
+.table-card {
+  background: var(--card);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
+  margin-bottom: 20px;
+  overflow: hidden;
+}
+.table-head {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.table-head h3 {
+  font-size: 14px;
+  color: var(--navy);
+  font-weight: 600;
+}
+.table-wrap {
+  overflow-x: auto;
+  max-height: 500px;
+  overflow-y: auto;
+}
+table.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.data-table thead {
+  position: sticky;
+  top: 0;
+  background: var(--bg);
+  z-index: 1;
+}
+.data-table th {
+  text-align: left;
+  padding: 10px 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+.data-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+  white-space: nowrap;
+}
+.data-table tbody tr { cursor: pointer; transition: background 0.12s; }
+.data-table tbody tr:hover { background: #FBF3F1; }
+
+.export-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* ============================================================
+   MODAL
+   ============================================================ */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 35, 66, 0.6);
+  z-index: 200;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 20px;
+  overflow-y: auto;
+  animation: fadeIn 0.2s ease-out;
+}
+.modal-overlay.show { display: flex; }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+.modal {
+  background: white;
+  max-width: 620px;
+  width: 100%;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  margin: 20px auto;
+  overflow: hidden;
+  animation: modalIn 0.25s cubic-bezier(0.2, 0.9, 0.4, 1.2);
+}
+@keyframes modalIn {
+  from { opacity: 0; transform: translateY(20px) scale(0.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+.modal-head {
+  padding: 18px 20px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.modal-head h3 { font-size: 16px; color: var(--navy); font-weight: 600; }
+.modal-close {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--bg);
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  transition: all 0.15s;
+}
+.modal-close:hover { background: var(--border); color: var(--text); }
+.modal-body { padding: 20px; font-size: 14px; max-height: 75vh; overflow-y: auto; }
+
+/* ============================================================
+   PRINT STYLES
+   ============================================================ */
+@media print {
+  @page { size: A4 landscape; margin: 14mm; }
+  body { background: white !important; font-size: 11px; }
+  .nav, .filter-bar, .export-row, .table-head, #loginScreen, .toast, .save-btn { display: none !important; }
+  .page { padding: 0; max-width: none; }
+  .chart-card, .stat-card, .table-card {
+    box-shadow: none !important;
+    break-inside: avoid;
+    border: 1px solid #ccc !important;
+  }
+  .chart-grid { grid-template-columns: 1fr 1fr !important; gap: 10px !important; }
+  .chart-card { min-height: 240px; }
+  .chart-card .chart-wrap { min-height: 180px; }
+  .print-header { display: block !important; }
+  .summary-grid { grid-template-columns: repeat(6, 1fr) !important; }
+  .table-wrap { max-height: none; overflow: visible; }
+  .data-table thead { position: static; }
+  .page-sub { display: none; }
+}
+
+.print-header {
+  display: none;
+  margin-bottom: 18px;
+  padding-bottom: 12px;
+  border-bottom: 3px solid var(--navy);
+}
+.print-header h1 { font-size: 18px; color: var(--navy); margin-bottom: 2px; }
+.print-header .meta { font-size: 11px; color: var(--text-muted); }
+
+/* Loading spinner */
+.spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  vertical-align: middle;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.hidden { display: none !important; }
+
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(128,0,32,0.2); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(128,0,32,0.35); }
+</style>
+</head>
+<body>
+
+<!-- ============================================================
+     LOGIN SCREEN
+     ============================================================ -->
+<div id="loginScreen">
+  <div class="login-card">
+    <div class="login-logo">⚕</div>
+    <div class="login-hospital">KIMS Hospital · Electronic City</div>
+    <h1>Anaesthesia Department</h1>
+    <p class="sub">Case Registry &amp; Statistics</p>
+    <label for="doctorSelect">Select your name</label>
+    <select id="doctorSelect">
+      <option value="">-- Choose doctor --</option>
+    </select>
+    <button class="login-btn" id="loginBtn">Continue &rarr;</button>
+    <div class="connection-status checking" id="connStatus">Checking connection...</div>
+  </div>
+</div>
+
+<!-- ============================================================
+     MAIN APP
+     ============================================================ -->
+<div id="app" class="hidden">
+
+  <nav class="nav">
+    <div class="nav-inner">
+      <div class="nav-brand">
+        <span class="nav-brand-icon">⚕</span>
+        <div class="nav-brand-text">
+          <span class="nav-brand-hospital">KIMS Ecity</span>
+          <span class="nav-brand-name">Anaesthesia Registry</span>
+        </div>
+      </div>
+      <button class="nav-btn" data-view="entry">✎ <span class="lbl-long">Enter Case</span></button>
+      <button class="nav-btn" data-view="mycases">☰ <span class="lbl-long">My Cases</span></button>
+      <button class="nav-btn hidden" id="navDashboard" data-view="dashboard">▦ <span class="lbl-long">Dashboard</span></button>
+      <span class="nav-user">
+        <span style="opacity:0.6;">👤</span>
+        <span id="navUserName"></span>
+        <span class="sync-dot" id="syncDot" title="Connected to Google Sheets"></span>
+      </span>
+      <button class="nav-btn" id="logoutBtn">↪ <span class="lbl-long">Logout</span></button>
+    </div>
+  </nav>
+
+  <!-- ============ SETUP BANNER (shows if API_URL not set) ============ -->
+  <div class="page hidden" id="setupBanner" style="padding-top: 20px; padding-bottom: 0;">
+    <div class="setup-banner">
+      <b>⚠ Google Sheets connection not configured.</b><br>
+      The app is running in local-only mode. Data will save to this browser only and will not be shared with other doctors.<br><br>
+      Open the HTML file in a text editor, find the line <code>const API_URL = 'https://script.google.com/macros/s/AKfycbxUFBoCwwoHNE7rCHh8e9RejYdv8Qq-iA3C36rt7XIBCCcLKTgxPlDEBBhqeuIw1RW-Xg/exec';</code> near the top of the script section, and paste your Apps Script Web App URL between the quotes. Then refresh this page.
+    </div>
+  </div>
+
+  <!-- ============ CASE ENTRY VIEW ============ -->
+  <main class="page" id="view-entry">
+    <h1 class="page-title">New Case Entry</h1>
+    <p class="page-sub">Fill out the basics — everything else is optional.</p>
+
+    <div class="form-wrapper">
+      <form id="caseForm" autocomplete="off">
+
+        <div class="accordion open" data-section="basics">
+          <button type="button" class="accordion-head">
+            <span class="accordion-title">
+              <span class="accordion-num">A</span> Basics
+              <span class="accordion-mandatory">REQUIRED</span>
+            </span>
+            <span class="chevron">▶</span>
+          </button>
+          <div class="accordion-body">
+            <div class="row-2">
+              <div class="field">
+                <label class="field-label">Date <span class="req">*</span></label>
+                <input type="date" class="input" id="f_date" required />
+              </div>
+              <div class="field">
+                <label class="field-label">Anaesthetist <span class="req">*</span></label>
+                <input type="text" class="input" id="f_doctor" readonly />
+              </div>
+            </div>
+
+            <div class="field">
+              <label class="field-label">Specialty <span class="req">*</span></label>
+              <select class="input" id="f_specialty" required>
+                <option value="">-- Select --</option>
+                <optgroup label="Surgical">
+                  <option>General Surgery</option>
+                  <option>Orthopaedics</option>
+                  <option>Gynaecology</option>
+                  <option>Obstetrics</option>
+                  <option>Urology</option>
+                  <option>ENT</option>
+                  <option>Ophthalmology</option>
+                  <option>Neurosurgery</option>
+                  <option>Cardiothoracic</option>
+                  <option>Vascular Surgery</option>
+                  <option>Plastics/Burns</option>
+                  <option>Paediatric Surgery</option>
+                  <option>Dental/Maxillofacial</option>
+                  <option>Trauma/Emergency</option>
+                  <option>Onco Surgery</option>
+                </optgroup>
+                <optgroup label="Medical / Procedural">
+                  <option>Cardiology</option>
+                  <option>Interventional Cardiology</option>
+                  <option>Interventional Radiology</option>
+                  <option>Radiology</option>
+                  <option>Pulmonology</option>
+                  <option>Gastroenterology</option>
+                  <option>Interventional Neurology</option>
+                  <option>Neurology</option>
+                  <option>Chronic Pain</option>
+                  <option>Medical Oncology</option>
+                  <option>Nephrology</option>
+                  <option>Dermatology</option>
+                  <option>Psychiatry (ECT)</option>
+                  <option>Critical Care</option>
+                </optgroup>
+                <option value="Other">Other (specify)</option>
+              </select>
+              <input type="text" class="input hidden" id="f_specialty_other"
+                     placeholder="Type specialty name..." maxlength="80"
+                     style="margin-top: 8px;" />
+            </div>
+
+            <!-- v3: Surgical Approach (shows only when surgical specialty selected) -->
+            <div class="field hidden" id="surgicalApproachField">
+              <label class="field-label">Surgical Approach <span class="opt">(optional)</span></label>
+              <div class="pill-grid" data-group="approach">
+                <button type="button" class="pill small" data-val="Open">Open</button>
+                <button type="button" class="pill small" data-val="Laparoscopic">Laparoscopic</button>
+                <button type="button" class="pill small" data-val="Robotic">Robotic</button>
+                <button type="button" class="pill small" data-val="Endoscopic">Endoscopic</button>
+              </div>
+            </div>
+
+            <div class="field">
+              <label class="field-label">Location <span class="req">*</span></label>
+              <select class="input" id="f_location" required>
+                <option value="">-- Select location --</option>
+                <optgroup label="Operating Theatres">
+                  <option>OT 1</option><option>OT 2</option><option>OT 3</option>
+                  <option>OT 4</option><option>OT 5</option><option>OT 6</option>
+                  <option>OT 7</option><option>OT 8</option>
+                </optgroup>
+                <optgroup label="Obstetrics">
+                  <option>OB 1</option><option>OB 2</option>
+                  <option>Labour Room</option>
+                </optgroup>
+                <optgroup label="Intensive Care">
+                  <option>MICU</option><option>SICU</option><option>CCU</option>
+                  <option>PICU</option><option>NICU</option>
+                </optgroup>
+                <optgroup label="Diagnostics &amp; Procedures">
+                  <option>MRI</option><option>MRI + BERA</option>
+                  <option>CT</option><option>Cath Lab</option>
+                  <option>Bronchoscopy</option><option>Endoscopy</option>
+                </optgroup>
+                <optgroup label="Other Clinical Areas">
+                  <option>Preoperative Bay / PACU</option>
+                  <option>ER</option>
+                  <option>Ward</option>
+                  <option>Other</option>
+                </optgroup>
+              </select>
+            </div>
+
+            <div class="field">
+              <label class="field-label">Procedure <span class="opt">(optional)</span></label>
+              <input type="text" class="input" id="f_procedure" placeholder="e.g. Lap cholecystectomy" maxlength="120" />
+            </div>
+
+            <!-- v3: Patient came from -->
+            <div class="field">
+              <label class="field-label">Patient came from <span class="opt">(optional)</span></label>
+              <div class="pill-grid" data-group="patientFrom">
+                <button type="button" class="pill small" data-val="Ward">Ward</button>
+                <button type="button" class="pill small" data-val="ICU">ICU</button>
+              </div>
+            </div>
+
+            <!-- v3: Second Anaesthetist -->
+            <div class="field">
+              <label class="field-label">Second Anaesthetist <span class="opt">(optional)</span></label>
+              <select class="input" id="f_second_anaesth">
+                <option value="">— None —</option>
+              </select>
+            </div>
+
+            <div class="field">
+              <label class="field-label">Elective / Emergency <span class="req">*</span></label>
+              <div class="toggle-pair" data-group="ee">
+                <button type="button" class="tog" data-val="Elective">Elective</button>
+                <button type="button" class="tog" data-val="Emergency">Emergency</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="accordion" data-section="anaesth">
+          <button type="button" class="accordion-head">
+            <span class="accordion-title">
+              <span class="accordion-num">B</span> Anaesthesia
+              <span class="accordion-mandatory">TYPE REQUIRED</span>
+            </span>
+            <span class="chevron">▶</span>
+          </button>
+          <div class="accordion-body">
+            <div class="field">
+              <label class="field-label">Type <span class="req">*</span></label>
+              <div class="pill-grid" data-group="atype">
+                <button type="button" class="pill" data-val="GA">GA</button>
+                <button type="button" class="pill" data-val="Spinal">Spinal</button>
+                <button type="button" class="pill" data-val="Epidural">Epidural</button>
+                <button type="button" class="pill" data-val="CSE">CSE</button>
+                <button type="button" class="pill" data-val="Block">Block</button>
+                <button type="button" class="pill" data-val="Sedation/MAC">Sedation/MAC</button>
+                <button type="button" class="pill" data-val="Local+Monitoring">Local+Monitoring</button>
+                <button type="button" class="pill" data-val="Awake">Awake</button>
+              </div>
+            </div>
+
+            <!-- GA sub-technique (shows only when GA selected) -->
+            <div class="field hidden" id="gaTechniqueField">
+              <label class="field-label">GA technique <span class="opt">(optional)</span></label>
+              <div class="pill-grid" data-group="gatech">
+                <button type="button" class="pill small" data-val="Volatile">Volatile</button>
+                <button type="button" class="pill small" data-val="TIVA">TIVA</button>
+                <button type="button" class="pill small" data-val="Volatile + TIVA">Volatile + TIVA</button>
+              </div>
+            </div>
+
+            <!-- v3: Spinal details (shows only when Spinal or CSE) -->
+            <div class="field hidden" id="spinalDetailsField">
+              <div style="background:#FBF3F1;border:1.5px solid var(--teal-light);border-radius:var(--radius-sm);padding:12px;">
+                <div style="font-size:12px;font-weight:600;color:var(--teal-dark);margin-bottom:10px;">Spinal details <span style="color:var(--text-soft);font-weight:400;">(optional)</span></div>
+                <div class="row-2" style="gap:10px;">
+                  <div>
+                    <label class="field-label" style="font-size:12px;">Number of attempts</label>
+                    <input type="number" class="input" id="f_spinal_attempts" min="1" max="20" placeholder="1" style="padding:8px;">
+                  </div>
+                  <div>
+                    <label class="field-label" style="font-size:12px;">Number of spaces tried</label>
+                    <input type="number" class="input" id="f_spinal_spaces" min="1" max="10" placeholder="1" style="padding:8px;">
+                  </div>
+                </div>
+                <div style="margin-top:10px;">
+                  <label class="field-label" style="font-size:12px;">Spinal needle type</label>
+                  <div class="pill-grid" data-group="spinalNeedle">
+                    <button type="button" class="pill small" data-val="Whitacre (pencil point)">Whitacre (pencil point)</button>
+                    <button type="button" class="pill small" data-val="Quincke (cutting)">Quincke (cutting)</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- v3: Epidural details (shows only when Epidural or CSE) -->
+            <div class="field hidden" id="epiduralDetailsField">
+              <div style="background:#FBF3F1;border:1.5px solid var(--teal-light);border-radius:var(--radius-sm);padding:12px;">
+                <div style="font-size:12px;font-weight:600;color:var(--teal-dark);margin-bottom:10px;">Epidural details <span style="color:var(--text-soft);font-weight:400;">(optional)</span></div>
+                <div>
+                  <label class="field-label" style="font-size:12px;">Level placed</label>
+                  <div class="pill-grid" data-group="epiduralLevel">
+                    <button type="button" class="pill small" data-val="High thoracic">High thoracic</button>
+                    <button type="button" class="pill small" data-val="Mid thoracic">Mid thoracic</button>
+                    <button type="button" class="pill small" data-val="Low thoracic">Low thoracic</button>
+                    <button type="button" class="pill small" data-val="Lumbar">Lumbar</button>
+                  </div>
+                </div>
+                <div class="row-2" style="margin-top:10px;gap:10px;">
+                  <div>
+                    <label class="field-label" style="font-size:12px;">Number of attempts</label>
+                    <input type="number" class="input" id="f_epidural_attempts" min="1" max="20" placeholder="1" style="padding:8px;">
+                  </div>
+                  <div>
+                    <label class="field-label" style="font-size:12px;">Loss of resistance</label>
+                    <div class="pill-grid" data-group="epiduralLor">
+                      <button type="button" class="pill small" data-val="Air">Air</button>
+                      <button type="button" class="pill small" data-val="Saline">Saline</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- v3: CSE technique (shows only when CSE selected) -->
+            <div class="field hidden" id="cseDetailsField">
+              <label class="field-label">CSE technique <span class="opt">(optional)</span></label>
+              <div class="pill-grid" data-group="cseTechnique">
+                <button type="button" class="pill small" data-val="Needle-through-needle">Needle-through-needle</button>
+                <button type="button" class="pill small" data-val="Separate (two-space)">Separate (two-space)</button>
+              </div>
+            </div>
+
+            <!-- v3: MAC restructured (shows only when Sedation/MAC selected) -->
+            <div class="field hidden" id="sedationDepthField">
+              <label class="field-label">Sedation/MAC type <span class="opt">(optional)</span></label>
+              <div class="pill-grid" data-group="macType">
+                <button type="button" class="pill small" data-val="Monitoring only">Monitoring only</button>
+                <button type="button" class="pill small" data-val="Sedation given">Sedation given</button>
+              </div>
+              <div class="hidden" id="macSedationLevelField" style="margin-top:10px;">
+                <label class="field-label" style="font-size:12px;">Sedation level</label>
+                <div class="pill-grid" data-group="macLevel">
+                  <button type="button" class="pill small" data-val="Mild">Mild</button>
+                  <button type="button" class="pill small" data-val="Moderate">Moderate</button>
+                  <button type="button" class="pill small" data-val="Deep">Deep</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="field">
+              <label class="field-label">Add-ons <span class="opt">(optional)</span></label>
+              <div class="chk-grid" style="grid-template-columns: 1fr 1fr 1fr;">
+                <label class="chk"><input type="checkbox" data-addon="Nerve block"><span class="box"></span><span class="lbl">+ Nerve block</span></label>
+                <label class="chk"><input type="checkbox" data-addon="Epidural top-up"><span class="box"></span><span class="lbl">+ Epidural top-up</span></label>
+                <label class="chk"><input type="checkbox" data-addon="IV sedation"><span class="box"></span><span class="lbl">+ IV sedation</span></label>
+              </div>
+            </div>
+
+            <div class="field">
+              <label class="field-label">ASA Grade <span class="opt">(optional)</span></label>
+              <div class="pill-grid" data-group="asa">
+                <button type="button" class="pill small" data-val="I">I</button>
+                <button type="button" class="pill small" data-val="II">II</button>
+                <button type="button" class="pill small" data-val="III">III</button>
+                <button type="button" class="pill small" data-val="IV">IV</button>
+                <button type="button" class="pill small" data-val="V">V</button>
+                <button type="button" class="pill small" data-val="VI">VI</button>
+              </div>
+            </div>
+
+            <div class="row-2">
+              <div class="field">
+                <label class="field-label">Patient Age <span class="opt">(optional)</span></label>
+                <input type="number" class="input" id="f_age" min="0" max="120" placeholder="years" />
+              </div>
+              <div class="field">
+                <label class="field-label">Sex <span class="opt">(optional)</span></label>
+                <div class="pill-grid" data-group="sex">
+                  <button type="button" class="pill small" data-val="M">M</button>
+                  <button type="button" class="pill small" data-val="F">F</button>
+                  <button type="button" class="pill small" data-val="Other">Other</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="field">
+              <label class="field-label">Duration <span class="req">*</span></label>
+              <div class="dur">
+                <div>
+                  <input type="number" id="f_dur_h" min="0" max="24" placeholder="00" />
+                  <span class="dur-unit">hours</span>
+                </div>
+                <span class="dur-sep">:</span>
+                <div>
+                  <input type="number" id="f_dur_m" min="0" max="59" placeholder="00" />
+                  <span class="dur-unit">minutes</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="accordion" data-section="special">
+          <button type="button" class="accordion-head">
+            <span class="accordion-title">
+              <span class="accordion-num optional">C</span> Special Techniques / Procedures
+              <span class="accordion-optional">OPTIONAL</span>
+            </span>
+            <span class="chevron">▶</span>
+          </button>
+          <div class="accordion-body">
+
+            <div class="chk-group">
+              <div class="chk-group-title">Airway</div>
+              <div class="chk-grid" id="grp-airway"></div>
+            </div>
+
+            <div class="chk-group">
+              <div class="chk-group-title">One-Lung Ventilation</div>
+              <div class="chk-grid" id="grp-olv"></div>
+            </div>
+
+            <!-- v3: Special Analgesia Techniques -->
+            <div class="chk-group">
+              <div class="chk-group-title">Special Analgesia Techniques</div>
+              <div class="chk-grid" id="grp-special-analgesia"></div>
+            </div>
+
+            <div class="chk-group">
+              <div class="chk-group-title">Regional / Blocks</div>
+              <div style="font-size:11px;color:var(--text-muted);font-weight:600;margin:8px 0 6px;">Upper Limb</div>
+              <div class="chk-grid" id="grp-blocks-ul"></div>
+              <div style="font-size:11px;color:var(--text-muted);font-weight:600;margin:12px 0 6px;">Lower Limb</div>
+              <div class="chk-grid" id="grp-blocks-ll"></div>
+              <div style="font-size:11px;color:var(--text-muted);font-weight:600;margin:12px 0 6px;">Trunk</div>
+              <div class="chk-grid" id="grp-blocks-trunk"></div>
+              <div style="font-size:11px;color:var(--text-muted);font-weight:600;margin:12px 0 6px;">Head / Neck</div>
+              <div class="chk-grid" id="grp-blocks-hn"></div>
+              <!-- v3: Ophthalmic blocks group hidden (kept structurally for fallback) -->
+              <div class="chk-grid hidden" id="grp-blocks-eye"></div>
+              <div style="font-size:11px;color:var(--text-muted);font-weight:600;margin:12px 0 6px;">Other Blocks</div>
+              <div class="chk-grid" id="grp-blocks-other"></div>
+
+              <div class="block-guidance hidden" id="blockGuidance">
+                <div class="block-guidance-title">Block guidance used:</div>
+                <div class="radio-grp" data-group="bguidance">
+                  <button type="button" class="radio on" data-val="Ultrasound">Ultrasound</button>
+                  <button type="button" class="radio" data-val="Nerve Stimulator">Nerve Stimulator</button>
+                  <button type="button" class="radio" data-val="Landmark">Landmark</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- v3: Continuous Catheters section -->
+            <div class="chk-group">
+              <div class="chk-group-title">Continuous Catheter Placed</div>
+              <div class="chk-grid" id="grp-catheters"></div>
+            </div>
+
+            <!-- v3: Lines split from Monitoring -->
+            <div class="chk-group">
+              <div class="chk-group-title">Invasive Lines</div>
+              <div class="chk-grid" id="grp-lines"></div>
+            </div>
+
+            <div class="chk-group">
+              <div class="chk-group-title">Monitoring</div>
+              <div class="chk-grid" id="grp-monitoring"></div>
+            </div>
+
+            <div class="chk-group">
+              <div class="chk-group-title">Other Special</div>
+              <div class="chk-grid" id="grp-other"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="accordion" data-section="complications">
+          <button type="button" class="accordion-head">
+            <span class="accordion-title">
+              <span class="accordion-num optional">D</span> Complications
+              <span class="accordion-optional">OPTIONAL</span>
+            </span>
+            <span class="chevron">▶</span>
+          </button>
+          <div class="accordion-body">
+            <button type="button" class="none-btn on" id="noCompBtn">✓ No complications</button>
+            <div class="chk-grid" id="grp-complications"></div>
+            <div class="field" style="margin-top:12px;">
+              <label class="field-label">Other complication <span class="opt">(specify)</span></label>
+              <input type="text" class="input" id="f_comp_other" placeholder="Describe..." maxlength="200" />
+            </div>
+          </div>
+        </div>
+
+        <div class="accordion" data-section="notes">
+          <button type="button" class="accordion-head">
+            <span class="accordion-title">
+              <span class="accordion-num optional">E</span> Notes
+              <span class="accordion-optional">OPTIONAL</span>
+            </span>
+            <span class="chevron">▶</span>
+          </button>
+          <div class="accordion-body">
+            <textarea class="textarea" id="f_notes" maxlength="500" placeholder="Any additional clinical notes..."></textarea>
+            <div class="char-count"><span id="charCount">0</span> / 500</div>
+          </div>
+        </div>
+
+        <button type="submit" class="save-btn" id="saveBtn">SAVE CASE</button>
+      </form>
+    </div>
+  </main>
+
+  <main class="page hidden" id="view-mycases">
+    <h1 class="page-title">My Cases</h1>
+    <p class="page-sub"><span id="myCaseCount">0</span> cases logged</p>
+    <div id="myCasesList"></div>
+  </main>
+
+  <main class="page hidden" id="view-dashboard">
+    <div class="print-header">
+      <h1>KIMS Hospital, Electronic City — Anaesthesia Department Report</h1>
+      <div class="meta" id="printMeta"></div>
+    </div>
+
+    <h1 class="page-title">Department Dashboard</h1>
+    <p class="page-sub">All cases across doctors, locations and specialties.</p>
+
+    <div class="filter-bar open" id="filterBar">
+      <button type="button" class="filter-head" id="filterHeadBtn">
+        <span>☷ Filters</span>
+        <span class="chevron">▶</span>
+      </button>
+      <div class="filter-body">
+        <div class="filter-grid">
+          <div>
+            <label class="field-label">From</label>
+            <input type="date" class="input" id="flt_from" />
+          </div>
+          <div>
+            <label class="field-label">To</label>
+            <input type="date" class="input" id="flt_to" />
+          </div>
+          <div>
+            <label class="field-label">Doctor</label>
+            <select class="input" id="flt_doctor"><option value="">All doctors</option></select>
+          </div>
+          <div>
+            <label class="field-label">Specialty</label>
+            <select class="input" id="flt_specialty"><option value="">All specialties</option></select>
+          </div>
+          <div>
+            <label class="field-label">Location</label>
+            <select class="input" id="flt_location"><option value="">All locations</option></select>
+          </div>
+        </div>
+        <div class="filter-grid" style="margin-top:10px;">
+          <div>
+            <label class="field-label">Anaesthesia Type</label>
+            <select class="input" id="flt_type"><option value="">All types</option></select>
+          </div>
+        </div>
+        <div class="filter-actions">
+          <button type="button" class="btn btn-primary" id="applyFiltersBtn">Apply Filters</button>
+          <button type="button" class="btn btn-ghost" id="clearFiltersBtn">Clear</button>
+          <button type="button" class="btn btn-ghost" id="refreshBtn">↻ Refresh from Sheet</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="summary-grid">
+      <div class="stat-card navy">
+        <div class="stat-label">Total Cases</div>
+        <div class="stat-value" id="stat_total">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">This Month</div>
+        <div class="stat-value" id="stat_month">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Hours This Month</div>
+        <div class="stat-value" id="stat_hours">0</div>
+      </div>
+      <div class="stat-card red">
+        <div class="stat-label">Complications</div>
+        <div class="stat-value" id="stat_comp">0<span class="stat-suffix">%</span></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Blocks Done</div>
+        <div class="stat-value" id="stat_blocks">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Invasive Lines</div>
+        <div class="stat-value" id="stat_lines">0</div>
+      </div>
+    </div>
+
+    <div class="chart-grid">
+      <div class="chart-card"><h3>① Cases per Month (last 12)</h3><div class="chart-wrap"><canvas id="ch1"></canvas></div></div>
+      <div class="chart-card"><h3>② Anaesthesia Type Split</h3><div class="chart-wrap"><canvas id="ch2"></canvas></div></div>
+      <div class="chart-card"><h3>③ Cases by Specialty</h3><div class="chart-wrap"><canvas id="ch3"></canvas></div></div>
+      <div class="chart-card"><h3>④ ASA Grade Distribution</h3><div class="chart-wrap"><canvas id="ch4"></canvas></div></div>
+      <div class="chart-card"><h3>⑤ Cases by Location (top 10)</h3><div class="chart-wrap"><canvas id="ch5"></canvas></div></div>
+      <div class="chart-card"><h3>⑥ Workload by Doctor</h3><div class="chart-wrap"><canvas id="ch6"></canvas></div></div>
+      <div class="chart-card"><h3>⑦ Elective vs Emergency</h3><div class="chart-wrap"><canvas id="ch7"></canvas></div></div>
+      <div class="chart-card"><h3>⑧ Complications Breakdown</h3><div class="chart-wrap"><canvas id="ch8"></canvas></div></div>
+      <div class="chart-card"><h3>⑨ Special Techniques (top 10)</h3><div class="chart-wrap"><canvas id="ch9"></canvas></div></div>
+      <div class="chart-card"><h3>⑩ Blocks Performed (top 10)</h3><div class="chart-wrap"><canvas id="ch10"></canvas></div></div>
+      <div class="chart-card"><h3>⑪ Invasive Lines Placed</h3><div class="chart-wrap"><canvas id="ch11"></canvas></div></div>
+      <div class="chart-card"><h3>⑫ One-Lung Ventilation / Month</h3><div class="chart-wrap"><canvas id="ch12"></canvas></div></div>
+      <div class="chart-card"><h3>⑬ Local Anaesthetic Drugs Used</h3><div class="chart-wrap"><canvas id="ch13"></canvas></div></div>
+      <div class="chart-card"><h3>⑭ Single-shot vs Continuous Blocks</h3><div class="chart-wrap"><canvas id="ch14"></canvas></div></div>
+      <div class="chart-card"><h3>⑮ GA Technique Split (Volatile / TIVA)</h3><div class="chart-wrap"><canvas id="ch15"></canvas></div></div>
+      <div class="chart-card"><h3>⑯ Surgical Approach (Open / Lap / Robotic / Endo)</h3><div class="chart-wrap"><canvas id="ch16"></canvas></div></div>
+      <div class="chart-card"><h3>⑰ Continuous Catheters Placed</h3><div class="chart-wrap"><canvas id="ch17"></canvas></div></div>
+      <div class="chart-card"><h3>⑱ Spinal Needle Type</h3><div class="chart-wrap"><canvas id="ch18"></canvas></div></div>
+      <div class="chart-card"><h3>⑲ Catheters per Month</h3><div class="chart-wrap"><canvas id="ch19"></canvas></div></div>
+      <div class="chart-card"><h3>⑳ Patient Origin (Ward / ICU)</h3><div class="chart-wrap"><canvas id="ch20"></canvas></div></div>
+    </div>
+
+    <div class="table-card">
+      <div class="table-head">
+        <h3>All Cases (<span id="tableCount">0</span>)</h3>
+        <div class="export-row">
+          <button class="btn btn-ghost" id="exportCsvBtn">↓ Export CSV</button>
+          <button class="btn btn-navy" id="printBtn">⎙ Print / PDF Report</button>
+          <button class="btn btn-primary" id="monthlyBtn">📊 Monthly Workload Report</button>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table class="data-table" id="dataTable">
+          <thead>
+            <tr>
+              <th>Date</th><th>Doctor</th><th>Specialty</th><th>Procedure</th>
+              <th>Type</th><th>ASA</th><th>Location</th><th>Duration</th>
+              <th>E/E</th><th>Special</th><th>Complications</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+</div>
+
+<div class="modal-overlay" id="caseModal">
+  <div class="modal">
+    <div class="modal-head">
+      <h3>Case Details</h3>
+      <button class="modal-close" id="modalCloseBtn">✕</button>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast">Case saved ✓</div>
+
+<script>
+/* ============================================================
+   >>> CONFIGURATION <<<
+   Paste your Google Apps Script Web App URL below.
+   The URL looks like:
+   https://script.google.com/macros/s/XXXXXXXXXXXXXXXXXX/exec
+
+   This MUST be a brand new Apps Script for the Ecity sheet.
+   Do NOT paste the Mahadevapura URL here — that would mix data.
+   ============================================================ */
+const API_URL = 'https://script.google.com/macros/s/AKfycbxUFBoCwwoHNE7rCHh8e9RejYdv8Qq-iA3C36rt7XIBCCcLKTgxPlDEBBhqeuIw1RW-Xg/exec';
+
+/* ============================================================
+   DOCTORS & REFERENCE DATA
+   ============================================================ */
+const DOCTORS = [
+  { name: 'Dr. Subramanyam Mahankali', role: 'HOD' },
+  { name: 'Dr. Vivek Rayadurg',        role: 'Lead' },
+  { name: 'Dr. Srivatsa Komarla' },
+  { name: 'Dr. Anilkumar' },
+  { name: 'Dr. Santosh BS' },
+  { name: 'Dr. Vineeth G' },
+  { name: 'Dr. Ankitha Choudhary' },
+  { name: 'Dr. Vishwanath KG' },
+  { name: 'Dr. Deepika BD' },
+  { name: 'Dr. Hemalakshmi' },
+  { name: 'Dr. Akshara Santosh' },
+  { name: 'Dr. RajKiran' },
+  { name: 'Dr. Pradhan' }
+];
+
+// Roles with full dashboard / data / reports access
+const PRIVILEGED_ROLES = ['HOD', 'Lead'];
+
+const AIRWAY = ['Video Laryngoscopy','McCoy Laryngoscope blade','Fibreoptic Bronchoscope (awake)','Fibreoptic Bronchoscope (asleep)','Difficult Airway (unanticipated)','Surgical Airway','Rapid Sequence Induction (RSI)'];
+const OLV = ['Double-Lumen ETT (left)','Double-Lumen ETT (right)','Bronchial Blocker','One-lung ventilation (other)'];
+const BLOCKS_UL = ['Interscalene','Supraclavicular','Costoclavicular','Infraclavicular','Axillary','Peripheral nerve block (forearm/hand)'];
+const BLOCKS_LL = ['Femoral/Adductor canal','Sciatic/Popliteal','Fascia Iliaca','PENG','Lumbar plexus','Sacral plexus','iPACK','Ankle block'];
+const BLOCKS_TRUNK = ['TAP block','ESPB','PECS I/II','Pecto-intercostal','External oblique intercostal','Paravertebral','Quadratus Lumborum (QL)','Rectus Sheath'];
+const BLOCKS_HN = ['Scalp block','Cervical plexus'];
+const BLOCKS_EYE = []; // v3: Ophthalmic blocks removed
+const BLOCKS_OTHER = ['BIER block','Wound infiltration (surgeon)'];
+const LINES = ['Arterial line — Radial','Arterial line — Femoral/other','CVC — Internal Jugular','CVC — Subclavian','CVC — Femoral','PICC','Introducer/Cordis sheath','Pulmonary Artery Catheter (PAC/Swan-Ganz)','Pacing wire','Intraosseous (IO) access'];
+const MONITORING = ['Intraoperative TOE/TEE','BIS','Entropy','EEG monitoring','SSEP/MEP neuromonitoring','NIRS / Cerebral oximetry','Continuous Cardiac Output (PiCCO/LiDCO/FloTrac)','Train-of-Four (TOF)'];
+const OTHER_SPECIAL = ['Cell salvage (intraop)','Deliberate hypotension','Awake craniotomy','Total IV Anaesthesia (TIVA)','High-frequency jet ventilation','Prone positioning (planned)'];
+const COMPLICATIONS = ['Hypotension','Hypertension','Bradycardia','Arrhythmia','Desaturation','Bronchospasm','Laryngospasm','Unanticipated difficult intubation','Failed intubation','Failed spinal','Failed epidural','Accidental dural puncture','High/total spinal','Failed block','Change of anaesthesia plan','LAST (local anaesthetic toxicity)','Severe PONV','Awareness under GA','Anaphylaxis','Haemorrhage/coagulopathy','Cardiac arrest','Death on table','Line complication (pneumothorax/haematoma/arterial puncture)','Nerve injury (suspected)'];
+
+// NEW v2 — block detail pick lists
+const LA_DRUGS = ['Ropivacaine','Bupivacaine (plain)','Bupivacaine (heavy)'];
+const ADJUVANTS = ['Dexmedetomidine','Dexamethasone','Fentanyl','Morphine'];
+const SIDES = ['L','R','Bilateral'];
+const TIMINGS = ['Pre-op','Intra-op','Post-op'];
+
+// NEW v3 — additional reference lists
+const SPECIAL_ANALGESIA = ['Intrathecal morphine','Epidural morphine','PCA (Patient-Controlled Analgesia)','Fascial plane block','Multimodal IV analgesia'];
+const CATHETERS = ['Peripheral nerve block catheter','Fascial plane block catheter','Epidural catheter','Spinal catheter'];
+const SURGICAL_APPROACHES = ['Open','Laparoscopic','Robotic','Endoscopic'];
+const SPINAL_NEEDLE_TYPES = ['Whitacre (pencil point)','Quincke (cutting)'];
+const EPIDURAL_LEVELS = ['High thoracic','Mid thoracic','Low thoracic','Lumbar'];
+const EPIDURAL_LOR = ['Air','Saline'];
+const CSE_TECHNIQUES = ['Needle-through-needle','Separate (two-space)'];
+const MAC_TYPES = ['Monitoring only','Sedation given'];
+const MAC_SEDATION_LEVELS = ['Mild','Moderate','Deep'];
+const SURGICAL_SPECIALTIES = ['General Surgery','Orthopaedics','Gynaecology','Obstetrics','Urology','ENT','Ophthalmology','Neurosurgery','Cardiothoracic','Vascular Surgery','Plastics/Burns','Paediatric Surgery','Dental/Maxillofacial','Trauma/Emergency','Onco Surgery'];
+
+const LOCAL_KEY = 'kims_ecity_anaesth_local';
+const PENDING_KEY = 'kims_ecity_anaesth_pending'; // cases saved locally while offline
+
+/* ============================================================
+   API LAYER — Google Apps Script
+   ============================================================ */
+const isConfigured = () => API_URL && API_URL.trim().length > 0 && API_URL.includes('script.google.com');
+
+async function apiPost(payload) {
+  // Apps Script web apps: use text/plain to avoid CORS preflight
+  const res = await fetch(API_URL, {
+    method: 'POST',
+    mode: 'cors',
+    redirect: 'follow',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify(payload)
+  });
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+  const data = await res.json();
+  if (!data.ok) throw new Error(data.error || 'Unknown server error');
+  return data;
+}
+
+async function apiGetCases() {
+  const res = await fetch(API_URL, { method: 'GET', redirect: 'follow' });
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+  const data = await res.json();
+  if (!data.ok) throw new Error(data.error || 'Server error');
+  return data.cases || [];
+}
+
+async function saveCaseToSheet(c) {
+  return await apiPost({ action: 'add', case: c });
+}
+
+/* ============================================================
+   LOCAL CACHE & PENDING QUEUE
+   ============================================================ */
+function getLocalCache() {
+  try { return JSON.parse(localStorage.getItem(LOCAL_KEY) || '[]'); } catch { return []; }
+}
+function setLocalCache(arr) {
+  try { localStorage.setItem(LOCAL_KEY, JSON.stringify(arr)); } catch {}
+}
+function getPendingQueue() {
+  try { return JSON.parse(localStorage.getItem(PENDING_KEY) || '[]'); } catch { return []; }
+}
+function setPendingQueue(arr) {
+  try { localStorage.setItem(PENDING_KEY, JSON.stringify(arr)); } catch {}
+}
+async function flushPendingQueue() {
+  if (!isConfigured()) return;
+  const pending = getPendingQueue();
+  if (pending.length === 0) return;
+  const remaining = [];
+  for (const c of pending) {
+    try { await saveCaseToSheet(c); } catch { remaining.push(c); }
+  }
+  setPendingQueue(remaining);
+  if (pending.length > remaining.length) {
+    showToast(`Synced ${pending.length - remaining.length} pending case(s) ✓`);
+  }
+}
+
+/* ============================================================
+   STATE
+   ============================================================ */
+let currentUser = null;
+let allCases = [];
+let filteredCases = [];
+const charts = {};
+let connectionOk = false;
+
+/* ============================================================
+   LOGIN
+   ============================================================ */
+function populateDoctorSelect() {
+  const sel = document.getElementById('doctorSelect');
+  DOCTORS.forEach(d => {
+    const opt = document.createElement('option');
+    opt.value = d.name;
+    const tag = d.role === 'HOD' ? '  (HOD)' : (d.role === 'Lead' ? '  (Lead)' : '');
+    opt.textContent = d.name + tag;
+    sel.appendChild(opt);
+  });
+}
+
+async function checkConnection() {
+  const status = document.getElementById('connStatus');
+  if (!isConfigured()) {
+    status.className = 'connection-status disconnected';
+    status.textContent = '⚠ Not configured — running in local-only mode';
+    connectionOk = false;
+    return;
+  }
+  try {
+    await apiGetCases();
+    status.className = 'connection-status connected';
+    status.textContent = '✓ Connected to Google Sheets';
+    connectionOk = true;
+  } catch (err) {
+    status.className = 'connection-status disconnected';
+    status.textContent = '⚠ Cannot reach Google Sheets (check URL)';
+    connectionOk = false;
+  }
+}
+
+function setSyncDot(state) {
+  const dot = document.getElementById('syncDot');
+  dot.classList.remove('syncing','error');
+  if (state === 'syncing') dot.classList.add('syncing');
+  if (state === 'error') dot.classList.add('error');
+}
+
+function showApp() {
+  document.getElementById('loginScreen').classList.add('hidden');
+  document.getElementById('app').classList.remove('hidden');
+  document.getElementById('navUserName').textContent = currentUser.name;
+  document.getElementById('f_doctor').value = currentUser.name;
+  // Both HOD and Lead see the Dashboard tab
+  if (PRIVILEGED_ROLES.includes(currentUser.role)) {
+    document.getElementById('navDashboard').classList.remove('hidden');
+  }
+  // Show setup banner if not configured
+  if (!isConfigured()) {
+    document.getElementById('setupBanner').classList.remove('hidden');
+  }
+  setView('entry');
+  loadAllCases();
+  flushPendingQueue();
+}
+
+function login() {
+  const sel = document.getElementById('doctorSelect');
+  const name = sel.value;
+  if (!name) { alert('Please select your name'); return; }
+  const doc = DOCTORS.find(d => d.name === name);
+  currentUser = { name: doc.name, role: doc.role || 'doctor' };
+  sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
+  showApp();
+}
+
+function logout() {
+  sessionStorage.removeItem('currentUser');
+  currentUser = null;
+  document.getElementById('loginScreen').classList.remove('hidden');
+  document.getElementById('app').classList.add('hidden');
+  document.getElementById('doctorSelect').value = '';
+}
+
+/* ============================================================
+   NAVIGATION
+   ============================================================ */
+function setView(view) {
+  document.querySelectorAll('.nav-btn[data-view]').forEach(b => {
+    b.classList.toggle('active', b.getAttribute('data-view') === view);
+  });
+  document.getElementById('view-entry').classList.toggle('hidden', view !== 'entry');
+  document.getElementById('view-mycases').classList.toggle('hidden', view !== 'mycases');
+  document.getElementById('view-dashboard').classList.toggle('hidden', view !== 'dashboard');
+  if (view === 'mycases') renderMyCases();
+  if (view === 'dashboard') renderDashboard();
+  window.scrollTo({ top: 0, behavior: 'instant' });
+}
+
+/* ============================================================
+   FORM BUILDING
+   ============================================================ */
+function buildCheckGroup(containerId, items, prefix) {
+  const el = document.getElementById(containerId);
+  el.innerHTML = '';
+  items.forEach((label, idx) => {
+    const lbl = document.createElement('label');
+    lbl.className = 'chk';
+    lbl.innerHTML = `<input type="checkbox" value="${escapeAttr(label)}" data-cat="${prefix}"><span class="box"></span><span class="lbl">${escapeHtml(label)}</span>`;
+    el.appendChild(lbl);
+  });
+}
+
+// Build expandable block items with per-block detail panels
+function buildBlockGroup(containerId, items) {
+  const el = document.getElementById(containerId);
+  el.innerHTML = '';
+  items.forEach(label => {
+    const safeId = 'blk_' + label.replace(/[^a-zA-Z0-9]/g,'_');
+    const wrap = document.createElement('div');
+    wrap.className = 'block-item-wrap';
+    wrap.dataset.blockName = label;
+    wrap.innerHTML = `
+      <div class="block-item-head" data-role="toggle-check">
+        <span class="box"></span>
+        <span class="lbl">${escapeHtml(label)}</span>
+        <button type="button" class="block-detail-toggle" data-role="toggle-expand">+ add details</button>
+      </div>
+      <div class="block-detail-body">
+        <div class="block-detail-row">
+          <div class="k">Type</div>
+          <div class="mini-pills" data-bg="type" data-bval="single">
+            <button type="button" class="mini-pill on" data-val="Single-shot">Single-shot</button>
+            <button type="button" class="mini-pill" data-val="Continuous">Continuous (catheter)</button>
+          </div>
+        </div>
+        <div class="block-detail-row">
+          <div class="k">Drug</div>
+          <div class="mini-pills" data-bg="drug" data-bval="single">
+            ${LA_DRUGS.map(d => `<button type="button" class="mini-pill" data-val="${escapeAttr(d)}">${escapeHtml(d)}</button>`).join('')}
+            <input type="text" class="text-input-small" data-role="drug-other" placeholder="Other drug...">
+          </div>
+        </div>
+        <div class="block-detail-row">
+          <div class="k">Dose / Vol</div>
+          <div class="num-input-row">
+            <input type="number" class="num-input" data-role="dose" step="0.1" min="0" placeholder="0">
+            <span class="num-input-label">mg</span>
+            <input type="number" class="num-input" data-role="volume" step="0.5" min="0" placeholder="0">
+            <span class="num-input-label">mL</span>
+            <input type="text" class="num-input" data-role="conc" placeholder="0.5%" style="width:70px;">
+            <span class="num-input-label">conc.</span>
+          </div>
+        </div>
+        <div class="block-detail-row">
+          <div class="k">Adjuvants</div>
+          <div class="mini-pills" data-bg="adjuv" data-bval="multi">
+            ${ADJUVANTS.map(a => `<button type="button" class="mini-pill" data-val="${escapeAttr(a)}">${escapeHtml(a)}</button>`).join('')}
+          </div>
+        </div>
+        <div class="block-detail-row">
+          <div class="k">Side</div>
+          <div class="mini-pills" data-bg="side" data-bval="single">
+            ${SIDES.map(s => `<button type="button" class="mini-pill" data-val="${escapeAttr(s)}">${escapeHtml(s)}</button>`).join('')}
+          </div>
+        </div>
+        <div class="block-detail-row">
+          <div class="k">Timing</div>
+          <div class="mini-pills" data-bg="timing" data-bval="single">
+            ${TIMINGS.map(t => `<button type="button" class="mini-pill" data-val="${escapeAttr(t)}">${escapeHtml(t)}</button>`).join('')}
+          </div>
+        </div>
+        <div class="block-detail-row" data-role="catheter-fields" style="display:none;">
+          <div class="k">Catheter</div>
+          <div class="num-input-row">
+            <input type="number" class="num-input" data-role="depth" step="0.5" min="0" placeholder="0">
+            <span class="num-input-label">cm at skin</span>
+            <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-muted);cursor:pointer;">
+              <input type="checkbox" data-role="tunnelled"> tunnelled
+            </label>
+          </div>
+        </div>
+      </div>
+    `;
+    el.appendChild(wrap);
+  });
+}
+
+function initBlockInteractions() {
+  const wraps = document.querySelectorAll('.block-item-wrap');
+  wraps.forEach(wrap => {
+    const head = wrap.querySelector('.block-item-head');
+    const expandBtn = wrap.querySelector('[data-role="toggle-expand"]');
+    const catheterFields = wrap.querySelector('[data-role="catheter-fields"]');
+    const typePills = wrap.querySelector('[data-bg="type"]');
+
+    // Click on the head (but not the expand button) toggles checked state
+    head.addEventListener('click', (e) => {
+      if (e.target.closest('[data-role="toggle-expand"]')) return;
+      const nowChecked = !wrap.classList.contains('checked');
+      wrap.classList.toggle('checked', nowChecked);
+      if (!nowChecked) {
+        wrap.classList.remove('expanded');
+        expandBtn.classList.remove('active');
+      }
+      onBlockCheckedChanged();
+    });
+
+    // Expand button toggles the detail panel (only when checked)
+    expandBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (!wrap.classList.contains('checked')) return;
+      const nowExpanded = !wrap.classList.contains('expanded');
+      wrap.classList.toggle('expanded', nowExpanded);
+      expandBtn.classList.toggle('active', nowExpanded);
+      expandBtn.textContent = nowExpanded ? '− hide details' : '+ add details';
+    });
+
+    // Mini-pill group interactions
+    wrap.querySelectorAll('.mini-pills').forEach(grp => {
+      grp.addEventListener('click', (e) => {
+        const btn = e.target.closest('.mini-pill');
+        if (!btn) return;
+        const mode = grp.dataset.bval;
+        if (mode === 'multi') {
+          btn.classList.toggle('on');
+        } else {
+          grp.querySelectorAll('.mini-pill').forEach(b => b.classList.remove('on'));
+          btn.classList.add('on');
+        }
+        // Show/hide catheter fields based on type
+        if (grp.dataset.bg === 'type') {
+          const isContinuous = btn.dataset.val === 'Continuous' && btn.classList.contains('on');
+          catheterFields.style.display = isContinuous ? '' : 'none';
+        }
+      });
+    });
+  });
+}
+
+function onBlockCheckedChanged() {
+  const anyChecked = document.querySelectorAll('.block-item-wrap.checked').length > 0;
+  document.getElementById('blockGuidance').classList.toggle('hidden', !anyChecked);
+}
+
+function getCheckedBlocks() {
+  return Array.from(document.querySelectorAll('.block-item-wrap.checked'))
+    .map(w => w.dataset.blockName);
+}
+
+function getBlockDetails() {
+  const details = [];
+  document.querySelectorAll('.block-item-wrap.checked').forEach(w => {
+    const get = (sel) => w.querySelector(sel);
+    const getPill = (bg) => {
+      const on = w.querySelector(`.mini-pills[data-bg="${bg}"] .mini-pill.on`);
+      return on ? on.dataset.val : null;
+    };
+    const getPills = (bg) => Array.from(w.querySelectorAll(`.mini-pills[data-bg="${bg}"] .mini-pill.on`)).map(b => b.dataset.val);
+
+    const drugStd = getPill('drug');
+    const drugOther = get('[data-role="drug-other"]').value.trim();
+    const dose = parseFloat(get('[data-role="dose"]').value) || null;
+    const volume = parseFloat(get('[data-role="volume"]').value) || null;
+    const conc = get('[data-role="conc"]').value.trim() || null;
+    const type = getPill('type');
+    const adjuvants = getPills('adjuv');
+    const side = getPill('side');
+    const timing = getPill('timing');
+    const depth = parseFloat(get('[data-role="depth"]').value) || null;
+    const tunnelled = get('[data-role="tunnelled"]').checked;
+
+    // Only include details object if anything meaningful was entered
+    const hasDetail = drugStd || drugOther || dose || volume || conc || adjuvants.length || side || timing || type === 'Continuous';
+    if (hasDetail) {
+      details.push({
+        block: w.dataset.blockName,
+        type: type || null,
+        drug: drugOther || drugStd || null,
+        dose, volume, conc,
+        adjuvants,
+        side, timing,
+        ...(type === 'Continuous' ? { catheterDepth: depth, tunnelled } : {})
+      });
+    }
+  });
+  return details;
+}
+
+function clearBlockInputs() {
+  document.querySelectorAll('.block-item-wrap').forEach(w => {
+    w.classList.remove('checked','expanded');
+    const btn = w.querySelector('[data-role="toggle-expand"]');
+    if (btn) { btn.classList.remove('active'); btn.textContent = '+ add details'; }
+    w.querySelectorAll('.mini-pill').forEach(p => p.classList.remove('on'));
+    // restore default single-shot selection
+    const defType = w.querySelector('.mini-pills[data-bg="type"] .mini-pill[data-val="Single-shot"]');
+    if (defType) defType.classList.add('on');
+    w.querySelectorAll('input[type="number"], input[type="text"]').forEach(i => i.value = '');
+    w.querySelectorAll('input[type="checkbox"]').forEach(i => i.checked = false);
+    const cath = w.querySelector('[data-role="catheter-fields"]');
+    if (cath) cath.style.display = 'none';
+  });
+}
+function escapeHtml(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function escapeAttr(s) { return escapeHtml(s); }
+
+function initForm() {
+  document.getElementById('f_date').value = new Date().toISOString().slice(0,10);
+
+  buildCheckGroup('grp-airway', AIRWAY, 'airway');
+  buildCheckGroup('grp-olv', OLV, 'olv');
+  // v3: special analgesia checklist
+  buildCheckGroup('grp-special-analgesia', SPECIAL_ANALGESIA, 'specialAnalgesia');
+  // v2: blocks use expandable detail panels
+  buildBlockGroup('grp-blocks-ul', BLOCKS_UL);
+  buildBlockGroup('grp-blocks-ll', BLOCKS_LL);
+  buildBlockGroup('grp-blocks-trunk', BLOCKS_TRUNK);
+  buildBlockGroup('grp-blocks-hn', BLOCKS_HN);
+  buildBlockGroup('grp-blocks-eye', BLOCKS_EYE); // empty in v3
+  buildBlockGroup('grp-blocks-other', BLOCKS_OTHER);
+  initBlockInteractions();
+
+  // v3: catheters - simple checkbox list
+  buildCheckGroup('grp-catheters', CATHETERS, 'catheters');
+  // v3: lines and monitoring split into separate groups
+  buildCheckGroup('grp-lines', LINES, 'lines');
+  buildCheckGroup('grp-monitoring', MONITORING, 'monitoring');
+  buildCheckGroup('grp-other', OTHER_SPECIAL, 'other');
+  buildCheckGroup('grp-complications', COMPLICATIONS, 'comp');
+
+  // v3: populate Second Anaesthetist dropdown
+  const secondSel = document.getElementById('f_second_anaesth');
+  if (secondSel) {
+    DOCTORS.forEach(d => {
+      const o = document.createElement('option');
+      o.value = d.name;
+      o.textContent = d.name;
+      secondSel.appendChild(o);
+    });
+  }
+
+  // Show/hide anaesthesia-type-specific sub-fields
+  const atypeGrp = document.querySelector('[data-group="atype"]');
+  atypeGrp.addEventListener('click', () => {
+    setTimeout(() => {
+      const val = getGroupValue('atype');
+      document.getElementById('gaTechniqueField').classList.toggle('hidden', val !== 'GA');
+      // v3: spinal details visible for Spinal or CSE
+      document.getElementById('spinalDetailsField').classList.toggle('hidden', val !== 'Spinal' && val !== 'CSE');
+      // v3: epidural details visible for Epidural or CSE
+      document.getElementById('epiduralDetailsField').classList.toggle('hidden', val !== 'Epidural' && val !== 'CSE');
+      // v3: CSE technique only when CSE
+      document.getElementById('cseDetailsField').classList.toggle('hidden', val !== 'CSE');
+      // v3: MAC restructured
+      document.getElementById('sedationDepthField').classList.toggle('hidden', val !== 'Sedation/MAC');
+      if (val !== 'GA') clearGroup('gatech');
+      if (val !== 'Spinal' && val !== 'CSE') {
+        clearGroup('spinalNeedle');
+        document.getElementById('f_spinal_attempts').value = '';
+        document.getElementById('f_spinal_spaces').value = '';
+      }
+      if (val !== 'Epidural' && val !== 'CSE') {
+        clearGroup('epiduralLevel');
+        clearGroup('epiduralLor');
+        document.getElementById('f_epidural_attempts').value = '';
+      }
+      if (val !== 'CSE') clearGroup('cseTechnique');
+      if (val !== 'Sedation/MAC') {
+        clearGroup('macType');
+        clearGroup('macLevel');
+        document.getElementById('macSedationLevelField').classList.add('hidden');
+      }
+    }, 0);
+  });
+
+  // v3: when MAC type changes — show sedation level only if "Sedation given"
+  const macTypeGrp = document.querySelector('[data-group="macType"]');
+  if (macTypeGrp) {
+    macTypeGrp.addEventListener('click', () => {
+      setTimeout(() => {
+        const macType = getGroupValue('macType');
+        const showLevel = macType === 'Sedation given';
+        document.getElementById('macSedationLevelField').classList.toggle('hidden', !showLevel);
+        if (!showLevel) clearGroup('macLevel');
+      }, 0);
+    });
+  }
+
+  // v3: Show/hide Surgical Approach based on specialty
+  document.getElementById('f_specialty').addEventListener('change', (e) => {
+    const otherField = document.getElementById('f_specialty_other');
+    if (e.target.value === 'Other') {
+      otherField.classList.remove('hidden');
+      otherField.focus();
+    } else {
+      otherField.classList.add('hidden');
+      otherField.value = '';
+    }
+    // v3: surgical approach only for surgical specialties
+    const isSurgical = SURGICAL_SPECIALTIES.includes(e.target.value);
+    document.getElementById('surgicalApproachField').classList.toggle('hidden', !isSurgical);
+    if (!isSurgical) clearGroup('approach');
+  });
+
+  document.querySelectorAll('[data-cat="comp"]').forEach(cb => {
+    cb.addEventListener('change', () => {
+      const anyChecked = document.querySelectorAll('[data-cat="comp"]:checked').length > 0
+        || document.getElementById('f_comp_other').value.trim().length > 0;
+      document.getElementById('noCompBtn').classList.toggle('on', !anyChecked);
+    });
+  });
+  document.getElementById('f_comp_other').addEventListener('input', () => {
+    const anyChecked = document.querySelectorAll('[data-cat="comp"]:checked').length > 0
+      || document.getElementById('f_comp_other').value.trim().length > 0;
+    document.getElementById('noCompBtn').classList.toggle('on', !anyChecked);
+  });
+
+  document.getElementById('noCompBtn').addEventListener('click', () => {
+    document.querySelectorAll('[data-cat="comp"]:checked').forEach(cb => cb.checked = false);
+    document.getElementById('f_comp_other').value = '';
+    document.getElementById('noCompBtn').classList.add('on');
+  });
+
+  document.getElementById('f_notes').addEventListener('input', e => {
+    document.getElementById('charCount').textContent = e.target.value.length;
+  });
+}
+
+function initAccordions() {
+  document.querySelectorAll('.accordion-head').forEach(head => {
+    head.addEventListener('click', () => {
+      const acc = head.closest('.accordion');
+      const isOpen = acc.classList.contains('open');
+      document.querySelectorAll('.accordion').forEach(a => a.classList.remove('open'));
+      if (!isOpen) acc.classList.add('open');
+    });
+  });
+  document.getElementById('filterHeadBtn').addEventListener('click', () => {
+    document.getElementById('filterBar').classList.toggle('open');
+  });
+}
+
+function initToggleGroups() {
+  document.querySelectorAll('[data-group]').forEach(grp => {
+    grp.addEventListener('click', e => {
+      const btn = e.target.closest('.tog, .pill, .radio');
+      if (!btn) return;
+      grp.querySelectorAll('.tog, .pill, .radio').forEach(b => b.classList.remove('on'));
+      btn.classList.add('on');
+    });
+  });
+}
+function getGroupValue(groupName) {
+  const btn = document.querySelector(`[data-group="${groupName}"] .on`);
+  return btn ? btn.getAttribute('data-val') : null;
+}
+function clearGroup(groupName) {
+  document.querySelectorAll(`[data-group="${groupName}"] .on`).forEach(b => b.classList.remove('on'));
+}
+
+/* ============================================================
+   SUBMIT CASE
+   ============================================================ */
+async function submitCase(e) {
+  e.preventDefault();
+  const saveBtn = document.getElementById('saveBtn');
+
+  const date = document.getElementById('f_date').value;
+  let specialty = document.getElementById('f_specialty').value;
+  // v2: if "Other" selected, use the typed specialty value
+  if (specialty === 'Other') {
+    const typed = document.getElementById('f_specialty_other').value.trim();
+    specialty = typed ? typed : ''; // treat empty typed field as missing
+  }
+  const location = document.getElementById('f_location').value;
+  const procedure = document.getElementById('f_procedure').value.trim();
+  const ee = getGroupValue('ee');
+  const atype = getGroupValue('atype');
+  const asa = getGroupValue('asa');
+  const sex = getGroupValue('sex');
+  const age = document.getElementById('f_age').value;
+  const durH = parseInt(document.getElementById('f_dur_h').value || '0', 10);
+  const durM = parseInt(document.getElementById('f_dur_m').value || '0', 10);
+  const durationMin = durH * 60 + durM;
+
+  const missing = [];
+  if (!date) missing.push('Date');
+  if (!specialty) missing.push('Specialty');
+  if (!location) missing.push('Location');
+  if (!ee) missing.push('Elective/Emergency');
+  if (!atype) missing.push('Anaesthesia Type');
+  if (durationMin <= 0) missing.push('Duration');
+
+  if (missing.length) {
+    showToast('Missing: ' + missing.join(', '), true);
+    const basics = document.querySelector('[data-section="basics"]');
+    if (!basics.classList.contains('open')) basics.querySelector('.accordion-head').click();
+    return;
+  }
+
+  const addons = Array.from(document.querySelectorAll('[data-addon]:checked')).map(c => c.getAttribute('data-addon'));
+  const airway = Array.from(document.querySelectorAll('[data-cat="airway"]:checked')).map(c => c.value);
+  const olv = Array.from(document.querySelectorAll('[data-cat="olv"]:checked')).map(c => c.value);
+  // NEW v2: blocks come from expandable block items
+  const blocks = getCheckedBlocks();
+  const blockDetails = getBlockDetails();
+  const blockGuidance = blocks.length ? getGroupValue('bguidance') : null;
+  const lines = Array.from(document.querySelectorAll('[data-cat="lines"]:checked')).map(c => c.value);
+  // v3: monitoring split out separately
+  const monitoring = Array.from(document.querySelectorAll('[data-cat="monitoring"]:checked')).map(c => c.value);
+  const otherSpecial = Array.from(document.querySelectorAll('[data-cat="other"]:checked')).map(c => c.value);
+  const complications = Array.from(document.querySelectorAll('[data-cat="comp"]:checked')).map(c => c.value);
+  const compOther = document.getElementById('f_comp_other').value.trim();
+  if (compOther) complications.push('Other: ' + compOther);
+  const notes = document.getElementById('f_notes').value.trim();
+
+  // NEW v2: GA technique + sedation depth (sedationDepth deprecated in v3 but field kept for compatibility)
+  const gaTechnique = atype === 'GA' ? getGroupValue('gatech') : null;
+
+  // NEW v3 fields
+  const surgicalApproach = SURGICAL_SPECIALTIES.includes(specialty) ? getGroupValue('approach') : null;
+  const secondAnaesthetist = document.getElementById('f_second_anaesth').value || null;
+  const patientFrom = getGroupValue('patientFrom');
+  const specialAnalgesia = Array.from(document.querySelectorAll('[data-cat="specialAnalgesia"]:checked')).map(c => c.value);
+  const catheters = Array.from(document.querySelectorAll('[data-cat="catheters"]:checked')).map(c => c.value);
+
+  // v3: build sub-detail JSONs (only when relevant type)
+  let spinalDetails = null;
+  if (atype === 'Spinal' || atype === 'CSE') {
+    const sa = parseInt(document.getElementById('f_spinal_attempts').value, 10);
+    const ss = parseInt(document.getElementById('f_spinal_spaces').value, 10);
+    const sn = getGroupValue('spinalNeedle');
+    if (sa || ss || sn) {
+      spinalDetails = {
+        attempts: isNaN(sa) ? null : sa,
+        spaces: isNaN(ss) ? null : ss,
+        needleType: sn || null
+      };
+    }
+  }
+
+  let epiduralDetails = null;
+  if (atype === 'Epidural' || atype === 'CSE') {
+    const ea = parseInt(document.getElementById('f_epidural_attempts').value, 10);
+    const el = getGroupValue('epiduralLevel');
+    const elor = getGroupValue('epiduralLor');
+    if (ea || el || elor) {
+      epiduralDetails = {
+        level: el || null,
+        attempts: isNaN(ea) ? null : ea,
+        lor: elor || null
+      };
+    }
+  }
+
+  let cseDetails = null;
+  if (atype === 'CSE') {
+    const ct = getGroupValue('cseTechnique');
+    if (ct) cseDetails = { technique: ct };
+  }
+
+  let macDetails = null;
+  let sedationDepth = null;
+  if (atype === 'Sedation/MAC') {
+    const macType = getGroupValue('macType');
+    const macLevel = macType === 'Sedation given' ? getGroupValue('macLevel') : null;
+    if (macType) {
+      macDetails = { type: macType, level: macLevel };
+      // For backward compat, also set sedationDepth
+      sedationDepth = macLevel || (macType === 'Monitoring only' ? 'None' : null);
+    }
+  }
+
+  const id = 'c_' + Date.now() + '_' + Math.random().toString(36).slice(2,8);
+  const record = {
+    id, date, doctor: currentUser.name, specialty, location,
+    procedure, electiveEmergency: ee, anaesthesiaType: atype,
+    addons, asaGrade: asa, patientAge: age ? parseInt(age,10) : null,
+    patientSex: sex, durationMin, airway, olv, blocks, blockGuidance,
+    lines, otherSpecial, complications, notes,
+    // v2 fields
+    gaTechnique, sedationDepth, blockDetails,
+    // v3 fields
+    surgicalApproach, secondAnaesthetist, patientFrom,
+    spinalDetails, epiduralDetails, cseDetails, macDetails,
+    specialAnalgesia, catheters, monitoring,
+    createdAt: new Date().toISOString()
+  };
+
+  saveBtn.disabled = true;
+  saveBtn.innerHTML = '<span class="spinner"></span> SAVING...';
+  setSyncDot('syncing');
+
+  try {
+    if (isConfigured()) {
+      await saveCaseToSheet(record);
+      setSyncDot('ok');
+      showToast('Case saved to Google Sheets ✓');
+    } else {
+      showToast('Saved locally (Google Sheets not configured)', false);
+    }
+    // Always keep a local cache copy
+    const cache = getLocalCache();
+    cache.push(record);
+    setLocalCache(cache);
+    allCases.push(record);
+    resetForm();
+  } catch (err) {
+    console.error(err);
+    // Save to pending queue so it's not lost
+    const pending = getPendingQueue();
+    pending.push(record);
+    setPendingQueue(pending);
+    const cache = getLocalCache();
+    cache.push(record);
+    setLocalCache(cache);
+    allCases.push(record);
+    setSyncDot('error');
+    showToast('Could not reach Google Sheets — saved locally, will retry.', true);
+    resetForm();
+  } finally {
+    saveBtn.disabled = false;
+    saveBtn.textContent = 'SAVE CASE';
+  }
+}
+
+function resetForm() {
+  document.getElementById('caseForm').reset();
+  document.getElementById('f_date').value = new Date().toISOString().slice(0,10);
+  document.getElementById('f_doctor').value = currentUser.name;
+  // v3: include all groups
+  ['ee','atype','asa','sex','gatech','seddepth','approach','patientFrom',
+   'spinalNeedle','epiduralLevel','epiduralLor','cseTechnique','macType','macLevel'
+  ].forEach(clearGroup);
+  document.querySelectorAll('[data-group="bguidance"] button').forEach(b => b.classList.remove('on'));
+  const us = document.querySelector('[data-group="bguidance"] [data-val="Ultrasound"]');
+  if (us) us.classList.add('on');
+  document.getElementById('blockGuidance').classList.add('hidden');
+  // v2/v3: hide all anaesthesia sub-fields
+  document.getElementById('gaTechniqueField').classList.add('hidden');
+  document.getElementById('sedationDepthField').classList.add('hidden');
+  document.getElementById('spinalDetailsField').classList.add('hidden');
+  document.getElementById('epiduralDetailsField').classList.add('hidden');
+  document.getElementById('cseDetailsField').classList.add('hidden');
+  document.getElementById('macSedationLevelField').classList.add('hidden');
+  document.getElementById('surgicalApproachField').classList.add('hidden');
+  // v3: clear numeric inputs in detail panels
+  ['f_spinal_attempts','f_spinal_spaces','f_epidural_attempts'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  // v3: reset second anaesthetist
+  document.getElementById('f_second_anaesth').value = '';
+  // v2: clear expandable block inputs
+  clearBlockInputs();
+  // v2: reset specialty Other field
+  const specOther = document.getElementById('f_specialty_other');
+  if (specOther) { specOther.value = ''; specOther.classList.add('hidden'); }
+  document.getElementById('noCompBtn').classList.add('on');
+  document.getElementById('charCount').textContent = '0';
+  document.querySelectorAll('.accordion').forEach(a => a.classList.remove('open'));
+  document.querySelector('[data-section="basics"]').classList.add('open');
+}
+
+function showToast(msg, isError = false) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.toggle('error', isError);
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3200);
+}
+
+/* ============================================================
+   LOAD CASES FROM GOOGLE SHEETS (with local fallback)
+   ============================================================ */
+async function loadAllCases() {
+  setSyncDot('syncing');
+  // Start with local cache for instant UI
+  allCases = getLocalCache();
+  if (isConfigured()) {
+    try {
+      const remote = await apiGetCases();
+      // Normalise — sheet may return strings for arrays, ensure shape
+      allCases = remote.map(c => {
+        let bd = c.blockDetails;
+        if (typeof bd === 'string' && bd.length) {
+          try { bd = JSON.parse(bd); } catch { bd = []; }
+        }
+        if (!Array.isArray(bd)) bd = [];
+        // v3: parse JSON detail fields
+        const parseJson = (val) => {
+          if (!val) return null;
+          if (typeof val === 'object') return val;
+          if (typeof val === 'string') {
+            try { return JSON.parse(val); } catch { return null; }
+          }
+          return null;
+        };
+        return {
+          ...c,
+          addons: Array.isArray(c.addons) ? c.addons : [],
+          airway: Array.isArray(c.airway) ? c.airway : [],
+          olv: Array.isArray(c.olv) ? c.olv : [],
+          blocks: Array.isArray(c.blocks) ? c.blocks : [],
+          lines: Array.isArray(c.lines) ? c.lines : [],
+          otherSpecial: Array.isArray(c.otherSpecial) ? c.otherSpecial : [],
+          complications: Array.isArray(c.complications) ? c.complications : [],
+          blockDetails: bd,
+          gaTechnique: c.gaTechnique || '',
+          sedationDepth: c.sedationDepth || '',
+          // v3 fields
+          surgicalApproach: c.surgicalApproach || '',
+          secondAnaesthetist: c.secondAnaesthetist || '',
+          patientFrom: c.patientFrom || '',
+          spinalDetails: parseJson(c.spinalDetails),
+          epiduralDetails: parseJson(c.epiduralDetails),
+          cseDetails: parseJson(c.cseDetails),
+          macDetails: parseJson(c.macDetails),
+          specialAnalgesia: Array.isArray(c.specialAnalgesia) ? c.specialAnalgesia : [],
+          catheters: Array.isArray(c.catheters) ? c.catheters : [],
+          monitoring: Array.isArray(c.monitoring) ? c.monitoring : [],
+          durationMin: Number(c.durationMin) || 0,
+          patientAge: c.patientAge === '' || c.patientAge == null ? null : Number(c.patientAge)
+        };
+      });
+      // Merge in any pending that haven't synced yet
+      const pending = getPendingQueue();
+      pending.forEach(p => { if (!allCases.some(x => x.id === p.id)) allCases.push(p); });
+      setLocalCache(allCases);
+      setSyncDot('ok');
+    } catch (err) {
+      console.warn('Falling back to local cache:', err);
+      setSyncDot('error');
+    }
+  }
+  allCases.sort((a,b) => (b.date || '').localeCompare(a.date || '') || (b.createdAt || '').localeCompare(a.createdAt || ''));
+}
+
+/* ============================================================
+   MY CASES VIEW
+   ============================================================ */
+function renderMyCases() {
+  const list = document.getElementById('myCasesList');
+  const mine = allCases.filter(c => c.doctor === currentUser.name);
+  document.getElementById('myCaseCount').textContent = mine.length;
+
+  if (mine.length === 0) {
+    list.innerHTML = `<div class="empty-state">
+      <div class="empty-state-icon">◔</div>
+      <div style="font-weight:600;color:var(--navy);margin-bottom:4px;">No cases yet</div>
+      <div>Enter your first case to see it here.</div>
+    </div>`;
+    return;
+  }
+
+  list.innerHTML = mine.map(c => {
+    const hasComp = c.complications && c.complications.length > 0;
+    return `<div class="case-card" data-id="${escapeAttr(c.id)}">
+      <div class="case-card-top">
+        <div class="case-date">${formatDate(c.date)}</div>
+        <div class="case-badges">
+          <span class="badge badge-teal">${escapeHtml(c.anaesthesiaType || '')}</span>
+          <span class="badge ${c.electiveEmergency === 'Emergency' ? 'badge-emergency' : 'badge-elective'}">${escapeHtml(c.electiveEmergency)}</span>
+          ${hasComp ? `<span class="badge badge-complications">⚠ ${c.complications.length} comp</span>` : ''}
+        </div>
+      </div>
+      <div class="case-meta">
+        <span><b>${escapeHtml(c.specialty)}</b></span>
+        <span>📍 ${escapeHtml(c.location)}</span>
+        <span>⏱ ${formatDuration(c.durationMin)}</span>
+        ${c.procedure ? `<span>${escapeHtml(c.procedure)}</span>` : ''}
+      </div>
+      <div class="case-detail-body">${renderCaseDetailHtml(c)}</div>
+    </div>`;
+  }).join('');
+
+  list.querySelectorAll('.case-card').forEach(card => {
+    card.addEventListener('click', () => card.classList.toggle('expanded'));
+  });
+}
+
+function renderCaseDetailHtml(c) {
+  const rows = [];
+  if (c.asaGrade) rows.push(['ASA Grade', escapeHtml(c.asaGrade)]);
+  if (c.patientAge || c.patientSex) {
+    const pt = [c.patientAge ? c.patientAge + 'y' : null, c.patientSex].filter(Boolean).join(' · ');
+    if (pt) rows.push(['Patient', escapeHtml(pt)]);
+  }
+  // v3: surgical approach, second anaesthetist, patient from
+  if (c.surgicalApproach) rows.push(['Surgical Approach', escapeHtml(c.surgicalApproach)]);
+  if (c.secondAnaesthetist) rows.push(['Second Anaesthetist', escapeHtml(c.secondAnaesthetist)]);
+  if (c.patientFrom) rows.push(['Patient from', escapeHtml(c.patientFrom)]);
+  // v2: GA technique / sedation depth
+  if (c.gaTechnique) rows.push(['GA technique', escapeHtml(c.gaTechnique)]);
+  // v3: detail panels
+  if (c.spinalDetails) {
+    const sd = c.spinalDetails;
+    const parts = [];
+    if (sd.attempts) parts.push(sd.attempts + ' attempt' + (sd.attempts > 1 ? 's' : ''));
+    if (sd.spaces) parts.push(sd.spaces + ' space' + (sd.spaces > 1 ? 's' : ''));
+    if (sd.needleType) parts.push(sd.needleType);
+    if (parts.length) rows.push(['Spinal details', escapeHtml(parts.join(' · '))]);
+  }
+  if (c.epiduralDetails) {
+    const ed = c.epiduralDetails;
+    const parts = [];
+    if (ed.level) parts.push(ed.level);
+    if (ed.attempts) parts.push(ed.attempts + ' attempt' + (ed.attempts > 1 ? 's' : ''));
+    if (ed.lor) parts.push('LOR: ' + ed.lor);
+    if (parts.length) rows.push(['Epidural details', escapeHtml(parts.join(' · '))]);
+  }
+  if (c.cseDetails && c.cseDetails.technique) {
+    rows.push(['CSE technique', escapeHtml(c.cseDetails.technique)]);
+  }
+  if (c.macDetails) {
+    const md = c.macDetails;
+    const parts = [];
+    if (md.type) parts.push(md.type);
+    if (md.level) parts.push(md.level);
+    if (parts.length) rows.push(['Sedation/MAC', escapeHtml(parts.join(' · '))]);
+  } else if (c.sedationDepth) {
+    rows.push(['Sedation depth', escapeHtml(c.sedationDepth)]);
+  }
+  if (c.addons && c.addons.length) rows.push(['Add-ons', chipHtml(c.addons)]);
+  if (c.airway && c.airway.length) rows.push(['Airway', chipHtml(c.airway)]);
+  if (c.olv && c.olv.length) rows.push(['One-lung Vent', chipHtml(c.olv)]);
+  // v3: special analgesia
+  if (c.specialAnalgesia && c.specialAnalgesia.length) rows.push(['Special Analgesia', chipHtml(c.specialAnalgesia)]);
+  // v2: render blocks with details if available
+  if (c.blocks && c.blocks.length) {
+    if (c.blockDetails && c.blockDetails.length) {
+      rows.push(['Blocks', renderBlockDetailsHtml(c.blocks, c.blockDetails)]);
+    } else {
+      rows.push(['Blocks', chipHtml(c.blocks)]);
+    }
+  }
+  if (c.blockGuidance) rows.push(['Block guidance', escapeHtml(c.blockGuidance)]);
+  // v3: catheters
+  if (c.catheters && c.catheters.length) rows.push(['Catheters placed', chipHtml(c.catheters, '#FFF4DC', '#8B5E1A')]);
+  // v3: lines and monitoring shown separately
+  if (c.lines && c.lines.length) rows.push(['Invasive Lines', chipHtml(c.lines)]);
+  if (c.monitoring && c.monitoring.length) rows.push(['Monitoring', chipHtml(c.monitoring)]);
+  if (c.otherSpecial && c.otherSpecial.length) rows.push(['Other special', chipHtml(c.otherSpecial)]);
+  if (c.complications && c.complications.length) rows.push(['Complications', chipHtml(c.complications, 'var(--danger-bg)', 'var(--danger)')]);
+  if (c.notes) rows.push(['Notes', escapeHtml(c.notes)]);
+
+  if (!rows.length) return '<div style="color:var(--text-muted);font-size:13px;">No additional details recorded.</div>';
+  return rows.map(r => `<div class="detail-row"><div class="k">${r[0]}</div><div class="v">${r[1]}</div></div>`).join('');
+}
+
+function renderBlockDetailsHtml(blocks, details) {
+  // Show each block; if details exist for it, show a small data line beneath
+  const detailByName = {};
+  (details || []).forEach(d => { detailByName[d.block] = d; });
+  return '<div style="display:flex;flex-direction:column;gap:6px;">' +
+    blocks.map(b => {
+      const d = detailByName[b];
+      if (!d) return `<div><span class="detail-chip">${escapeHtml(b)}</span></div>`;
+      const parts = [];
+      if (d.type) parts.push(escapeHtml(d.type));
+      if (d.drug) {
+        const doseVol = [];
+        if (d.conc) doseVol.push(escapeHtml(d.conc));
+        if (d.dose) doseVol.push(d.dose + 'mg');
+        if (d.volume) doseVol.push(d.volume + 'mL');
+        parts.push(escapeHtml(d.drug) + (doseVol.length ? ' ' + doseVol.join(' · ') : ''));
+      }
+      if (d.side) parts.push(escapeHtml(d.side));
+      if (d.timing) parts.push(escapeHtml(d.timing));
+      if (d.adjuvants && d.adjuvants.length) parts.push('+' + d.adjuvants.map(escapeHtml).join(', '));
+      if (d.catheterDepth) parts.push('cath ' + d.catheterDepth + 'cm' + (d.tunnelled ? ' tunnelled' : ''));
+      return `<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+        <span class="detail-chip" style="background:#F4E8C8;color:var(--teal-dark);font-weight:600;">${escapeHtml(b)}</span>
+        <span style="font-size:11px;color:var(--text-muted);">${parts.join(' · ')}</span>
+      </div>`;
+    }).join('') + '</div>';
+}
+
+function chipHtml(items, bg, color) {
+  const style = bg ? ` style="background:${bg};color:${color};"` : '';
+  return '<div class="detail-chips">' +
+    items.map(i => `<span class="detail-chip"${style}>${escapeHtml(i)}</span>`).join('') +
+    '</div>';
+}
+
+function formatDate(s) {
+  if (!s) return '';
+  // Accept both YYYY-MM-DD and ISO strings
+  const d = new Date(typeof s === 'string' && s.length === 10 ? s + 'T00:00:00' : s);
+  if (isNaN(d.getTime())) return String(s);
+  return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+}
+function formatDuration(mins) {
+  if (!mins || mins <= 0) return '—';
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
+  if (h === 0) return `${m}m`;
+  if (m === 0) return `${h}h`;
+  return `${h}h ${m}m`;
+}
+
+/* ============================================================
+   DASHBOARD
+   ============================================================ */
+function refreshSpecialtyFilter() {
+  const specSel = document.getElementById('flt_specialty');
+  if (!specSel) return;
+  const currentValue = specSel.value;
+  // Clear existing options except the "All" placeholder
+  specSel.innerHTML = '<option value="">All specialties</option>';
+  const presets = window.__SPEC_PRESETS || { 'Surgical': [], 'Medical / Procedural': [] };
+
+  // Gather specialties actually present in the data, not in the presets
+  const allPresetVals = new Set([].concat(...Object.values(presets)));
+  const customInData = new Set();
+  (allCases || []).forEach(c => {
+    if (c.specialty && !allPresetVals.has(c.specialty)) customInData.add(c.specialty);
+  });
+
+  Object.entries(presets).forEach(([groupName, items]) => {
+    const og = document.createElement('optgroup');
+    og.label = groupName;
+    items.forEach(s => {
+      const o = document.createElement('option'); o.value = s; o.textContent = s; og.appendChild(o);
+    });
+    specSel.appendChild(og);
+  });
+
+  if (customInData.size > 0) {
+    const og = document.createElement('optgroup');
+    og.label = 'Other (from data)';
+    Array.from(customInData).sort().forEach(s => {
+      const o = document.createElement('option'); o.value = s; o.textContent = s; og.appendChild(o);
+    });
+    specSel.appendChild(og);
+  }
+
+  // Restore previous selection if still valid
+  if (currentValue) specSel.value = currentValue;
+}
+
+function initDashboardFilters() {
+  const doctorSel = document.getElementById('flt_doctor');
+  DOCTORS.forEach(d => {
+    const o = document.createElement('option'); o.value = d.name; o.textContent = d.name; doctorSel.appendChild(o);
+  });
+
+  // v2: Preset specialties grouped. Actual data may have additional "Other"
+  // specialties typed in — those get added dynamically in refreshSpecialtyFilter()
+  const SPEC_PRESETS = {
+    'Surgical': ['General Surgery','Orthopaedics','Gynaecology','Obstetrics','Urology','ENT','Ophthalmology','Neurosurgery','Cardiothoracic','Vascular Surgery','Plastics/Burns','Paediatric Surgery','Dental/Maxillofacial','Trauma/Emergency','Onco Surgery'],
+    'Medical / Procedural': ['Cardiology','Interventional Cardiology','Interventional Radiology','Radiology','Pulmonology','Gastroenterology','Interventional Neurology','Neurology','Chronic Pain','Medical Oncology','Nephrology','Dermatology','Psychiatry (ECT)']
+  };
+  window.__SPEC_PRESETS = SPEC_PRESETS;
+  refreshSpecialtyFilter();
+
+  const locs = ['OT 1','OT 2','OT 3','OT 4','OT 5','OT 6','OT 7','OT 8','OB 1','OB 2','Labour Room','MICU','SICU','CCU','PICU','NICU','MRI','MRI + BERA','CT','Cath Lab','Bronchoscopy','Endoscopy','Preoperative Bay / PACU','ER','Ward','Other'];
+  const locSel = document.getElementById('flt_location');
+  locs.forEach(l => { const o = document.createElement('option'); o.value = l; o.textContent = l; locSel.appendChild(o); });
+
+  const types = ['GA','Spinal','Epidural','CSE','Sedation/MAC','Local+Monitoring','Awake'];
+  const typeSel = document.getElementById('flt_type');
+  types.forEach(t => { const o = document.createElement('option'); o.value = t; o.textContent = t; typeSel.appendChild(o); });
+
+  document.getElementById('applyFiltersBtn').addEventListener('click', renderDashboard);
+  document.getElementById('clearFiltersBtn').addEventListener('click', () => {
+    ['flt_from','flt_to','flt_doctor','flt_specialty','flt_location','flt_type'].forEach(id => {
+      document.getElementById(id).value = '';
+    });
+    renderDashboard();
+  });
+  document.getElementById('refreshBtn').addEventListener('click', async () => {
+    await loadAllCases();
+    renderDashboard();
+    showToast('Refreshed from Google Sheets ✓');
+  });
+}
+
+function applyFilters() {
+  const from = document.getElementById('flt_from').value;
+  const to = document.getElementById('flt_to').value;
+  const doc = document.getElementById('flt_doctor').value;
+  const spec = document.getElementById('flt_specialty').value;
+  const loc = document.getElementById('flt_location').value;
+  const type = document.getElementById('flt_type').value;
+
+  filteredCases = allCases.filter(c => {
+    if (from && c.date < from) return false;
+    if (to && c.date > to) return false;
+    if (doc && c.doctor !== doc) return false;
+    if (spec && c.specialty !== spec) return false;
+    if (loc && c.location !== loc) return false;
+    if (type && c.anaesthesiaType !== type) return false;
+    return true;
+  });
+}
+
+function renderDashboard() {
+  refreshSpecialtyFilter();
+  applyFilters();
+  renderSummary();
+  renderCharts();
+  renderDataTable();
+
+  const now = new Date();
+  document.getElementById('printMeta').textContent =
+    `Generated ${now.toLocaleString('en-GB')} · ${filteredCases.length} cases in view`;
+}
+
+function renderSummary() {
+  const total = filteredCases.length;
+  const now = new Date();
+  const curMonth = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0');
+  const monthCases = filteredCases.filter(c => String(c.date || '').startsWith(curMonth));
+  const monthHours = monthCases.reduce((s,c) => s + (c.durationMin || 0), 0) / 60;
+  const compCount = filteredCases.filter(c => c.complications && c.complications.length > 0).length;
+  const compPct = total > 0 ? ((compCount / total) * 100).toFixed(1) : '0';
+  const blocksCount = filteredCases.reduce((s,c) => s + ((c.blocks && c.blocks.length) || 0), 0);
+  const linesCount = filteredCases.reduce((s,c) => s + ((c.lines && c.lines.length) || 0), 0);
+
+  document.getElementById('stat_total').textContent = total;
+  document.getElementById('stat_month').textContent = monthCases.length;
+  document.getElementById('stat_hours').textContent = monthHours.toFixed(1);
+  document.getElementById('stat_comp').innerHTML = compPct + '<span class="stat-suffix">%</span>';
+  document.getElementById('stat_blocks').textContent = blocksCount;
+  document.getElementById('stat_lines').textContent = linesCount;
+}
+
+/* ============================================================
+   CHARTS
+   ============================================================ */
+const CHART_PALETTE = ['#C9A14A','#800020','#DFB868','#A83248','#E6C58A','#7A3A4D','#EFD9A8','#6B4A52','#F4E8C8','#9B8088','#C62828','#B8860B'];
+const CHART_DEFAULTS = {
+  responsive: true,
+  maintainAspectRatio: false,
+  plugins: {
+    legend: { labels: { font: { family: 'DM Sans', size: 11 }, color: '#6B4A52', boxWidth: 12 } },
+    tooltip: { titleFont: { family: 'DM Sans' }, bodyFont: { family: 'DM Sans' } }
+  }
+};
+
+function destroyCharts() {
+  Object.keys(charts).forEach(k => { if (charts[k]) charts[k].destroy(); delete charts[k]; });
+}
+
+function renderCharts() {
+  destroyCharts();
+  renderCh1(); renderCh2(); renderCh3(); renderCh4();
+  renderCh5(); renderCh6(); renderCh7(); renderCh8();
+  renderCh9(); renderCh10(); renderCh11(); renderCh12();
+  renderCh13(); renderCh14(); renderCh15();
+  // v3 charts
+  renderCh16(); renderCh17(); renderCh18(); renderCh19(); renderCh20();
+}
+
+function lastNMonths(n) {
+  const arr = [];
+  const d = new Date();
+  d.setDate(1);
+  for (let i = n - 1; i >= 0; i--) {
+    const dt = new Date(d.getFullYear(), d.getMonth() - i, 1);
+    arr.push({
+      key: dt.getFullYear() + '-' + String(dt.getMonth()+1).padStart(2,'0'),
+      label: dt.toLocaleDateString('en-GB', { month: 'short', year: '2-digit' })
+    });
+  }
+  return arr;
+}
+
+function groupCount(arr, key) {
+  const m = {};
+  arr.forEach(x => {
+    const v = typeof key === 'function' ? key(x) : x[key];
+    if (v == null || v === '') return;
+    m[v] = (m[v] || 0) + 1;
+  });
+  return m;
+}
+
+function renderCh1() {
+  const months = lastNMonths(12);
+  const counts = months.map(m => filteredCases.filter(c => String(c.date || '').startsWith(m.key)).length);
+  charts.ch1 = new Chart(document.getElementById('ch1'), {
+    type: 'bar',
+    data: { labels: months.map(m => m.label),
+      datasets: [{ label: 'Cases', data: counts, backgroundColor: '#C9A14A', borderRadius: 4 }] },
+    options: { ...CHART_DEFAULTS, plugins: { ...CHART_DEFAULTS.plugins, legend: { display: false } },
+      scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }
+  });
+}
+function renderCh2() {
+  const m = groupCount(filteredCases, 'anaesthesiaType');
+  const labels = Object.keys(m);
+  charts.ch2 = new Chart(document.getElementById('ch2'), {
+    type: 'doughnut',
+    data: { labels, datasets: [{ data: labels.map(l => m[l]), backgroundColor: CHART_PALETTE }] },
+    options: { ...CHART_DEFAULTS }
+  });
+}
+function renderCh3() {
+  const m = groupCount(filteredCases, 'specialty');
+  const entries = Object.entries(m).sort((a,b) => b[1] - a[1]);
+  charts.ch3 = new Chart(document.getElementById('ch3'), {
+    type: 'bar',
+    data: { labels: entries.map(e => e[0]),
+      datasets: [{ label: 'Cases', data: entries.map(e => e[1]), backgroundColor: '#800020', borderRadius: 3 }] },
+    options: { ...CHART_DEFAULTS, indexAxis: 'y',
+      plugins: { ...CHART_DEFAULTS.plugins, legend: { display: false } },
+      scales: { x: { beginAtZero: true, ticks: { precision: 0 } } } }
+  });
+}
+function renderCh4() {
+  const m = groupCount(filteredCases, 'asaGrade');
+  const order = ['I','II','III','IV','V','VI'];
+  const labels = order.filter(o => m[o]);
+  charts.ch4 = new Chart(document.getElementById('ch4'), {
+    type: 'doughnut',
+    data: { labels: labels.map(l => 'ASA ' + l),
+      datasets: [{ data: labels.map(l => m[l]), backgroundColor: CHART_PALETTE }] },
+    options: { ...CHART_DEFAULTS }
+  });
+}
+function renderCh5() {
+  const m = groupCount(filteredCases, 'location');
+  const entries = Object.entries(m).sort((a,b) => b[1] - a[1]).slice(0, 10);
+  charts.ch5 = new Chart(document.getElementById('ch5'), {
+    type: 'bar',
+    data: { labels: entries.map(e => e[0]),
+      datasets: [{ label: 'Cases', data: entries.map(e => e[1]), backgroundColor: '#DFB868', borderRadius: 3 }] },
+    options: { ...CHART_DEFAULTS, indexAxis: 'y',
+      plugins: { ...CHART_DEFAULTS.plugins, legend: { display: false } },
+      scales: { x: { beginAtZero: true, ticks: { precision: 0 } } } }
+  });
+}
+function renderCh6() {
+  const byDoc = {};
+  filteredCases.forEach(c => {
+    if (!byDoc[c.doctor]) byDoc[c.doctor] = { cases: 0, minutes: 0 };
+    byDoc[c.doctor].cases += 1;
+    byDoc[c.doctor].minutes += c.durationMin || 0;
+  });
+  const entries = Object.entries(byDoc).sort((a,b) => b[1].cases - a[1].cases);
+  const shortName = n => String(n).replace(/^Dr\s+/, '').split(' ').map((p,i) => i === 0 ? p : p[0]+'.').join(' ');
+  charts.ch6 = new Chart(document.getElementById('ch6'), {
+    type: 'bar',
+    data: { labels: entries.map(e => shortName(e[0])),
+      datasets: [
+        { label: 'Cases', data: entries.map(e => e[1].cases), backgroundColor: '#C9A14A', borderRadius: 3 },
+        { label: 'Hours', data: entries.map(e => +(e[1].minutes/60).toFixed(1)), backgroundColor: '#800020', borderRadius: 3 }
+      ] },
+    options: { ...CHART_DEFAULTS, scales: { y: { beginAtZero: true } } }
+  });
+}
+function renderCh7() {
+  const m = groupCount(filteredCases, 'electiveEmergency');
+  const labels = Object.keys(m);
+  charts.ch7 = new Chart(document.getElementById('ch7'), {
+    type: 'doughnut',
+    data: { labels, datasets: [{ data: labels.map(l => m[l]),
+      backgroundColor: labels.map(l => l === 'Emergency' ? '#B8860B' : '#7A3A4D') }] },
+    options: { ...CHART_DEFAULTS }
+  });
+}
+function renderCh8() {
+  const m = {};
+  filteredCases.forEach(c => {
+    (c.complications || []).forEach(k => {
+      const key = String(k).startsWith('Other:') ? 'Other' : k;
+      m[key] = (m[key] || 0) + 1;
+    });
+  });
+  const entries = Object.entries(m).sort((a,b) => b[1] - a[1]);
+  charts.ch8 = new Chart(document.getElementById('ch8'), {
+    type: 'bar',
+    data: { labels: entries.map(e => e[0]),
+      datasets: [{ label: 'Count', data: entries.map(e => e[1]), backgroundColor: '#C62828', borderRadius: 3 }] },
+    options: { ...CHART_DEFAULTS,
+      plugins: { ...CHART_DEFAULTS.plugins, legend: { display: false } },
+      scales: { y: { beginAtZero: true, ticks: { precision: 0 } }, x: { ticks: { font: { size: 10 } } } } }
+  });
+}
+function renderCh9() {
+  const m = {};
+  filteredCases.forEach(c => {
+    [...(c.airway||[]), ...(c.olv||[]), ...(c.otherSpecial||[])].forEach(k => { m[k] = (m[k] || 0) + 1; });
+  });
+  const entries = Object.entries(m).sort((a,b) => b[1] - a[1]).slice(0, 10);
+  charts.ch9 = new Chart(document.getElementById('ch9'), {
+    type: 'bar',
+    data: { labels: entries.map(e => e[0]),
+      datasets: [{ label: 'Count', data: entries.map(e => e[1]), backgroundColor: '#DFB868', borderRadius: 3 }] },
+    options: { ...CHART_DEFAULTS, indexAxis: 'y',
+      plugins: { ...CHART_DEFAULTS.plugins, legend: { display: false } },
+      scales: { x: { beginAtZero: true, ticks: { precision: 0 } } } }
+  });
+}
+function renderCh10() {
+  const m = {};
+  filteredCases.forEach(c => { (c.blocks || []).forEach(k => { m[k] = (m[k] || 0) + 1; }); });
+  const entries = Object.entries(m).sort((a,b) => b[1] - a[1]).slice(0, 10);
+  charts.ch10 = new Chart(document.getElementById('ch10'), {
+    type: 'bar',
+    data: { labels: entries.map(e => e[0]),
+      datasets: [{ label: 'Count', data: entries.map(e => e[1]), backgroundColor: '#C9A14A', borderRadius: 3 }] },
+    options: { ...CHART_DEFAULTS, indexAxis: 'y',
+      plugins: { ...CHART_DEFAULTS.plugins, legend: { display: false } },
+      scales: { x: { beginAtZero: true, ticks: { precision: 0 } } } }
+  });
+}
+function renderCh11() {
+  const m = {};
+  filteredCases.forEach(c => { (c.lines || []).forEach(k => { m[k] = (m[k] || 0) + 1; }); });
+  const entries = Object.entries(m).sort((a,b) => b[1] - a[1]);
+  charts.ch11 = new Chart(document.getElementById('ch11'), {
+    type: 'bar',
+    data: { labels: entries.map(e => String(e[0]).replace(/\s*—.*/, '').replace(/\s*\(.*?\)/, '')),
+      datasets: [{ label: 'Count', data: entries.map(e => e[1]), backgroundColor: '#800020', borderRadius: 3 }] },
+    options: { ...CHART_DEFAULTS,
+      plugins: { ...CHART_DEFAULTS.plugins, legend: { display: false } },
+      scales: { y: { beginAtZero: true, ticks: { precision: 0 } },
+                x: { ticks: { font: { size: 10 }, maxRotation: 45, minRotation: 45 } } } }
+  });
+}
+function renderCh12() {
+  const months = lastNMonths(12);
+  const counts = months.map(m =>
+    filteredCases.filter(c => String(c.date || '').startsWith(m.key) && c.olv && c.olv.length > 0).length
+  );
+  charts.ch12 = new Chart(document.getElementById('ch12'), {
+    type: 'line',
+    data: { labels: months.map(m => m.label),
+      datasets: [{ label: 'OLV cases', data: counts, borderColor: '#C9A14A',
+        backgroundColor: 'rgba(201,161,74,0.18)', fill: true, tension: 0.3,
+        pointBackgroundColor: '#C9A14A', pointRadius: 4, pointHoverRadius: 6 }] },
+    options: { ...CHART_DEFAULTS,
+      plugins: { ...CHART_DEFAULTS.plugins, legend: { display: false } },
+      scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }
+  });
+}
+
+// v2: Local anaesthetic drugs used across all block details
+function renderCh13() {
+  const m = {};
+  filteredCases.forEach(c => {
+    (c.blockDetails || []).forEach(bd => {
+      if (bd && bd.drug) m[bd.drug] = (m[bd.drug] || 0) + 1;
+    });
+  });
+  const entries = Object.entries(m).sort((a,b) => b[1] - a[1]).slice(0, 10);
+  const canvas = document.getElementById('ch13');
+  if (!canvas) return;
+  if (entries.length === 0) {
+    drawEmptyChartMessage(canvas, 'No block drug data yet');
+    return;
+  }
+  charts.ch13 = new Chart(canvas, {
+    type: 'bar',
+    data: { labels: entries.map(e => e[0]),
+      datasets: [{ label: 'Uses', data: entries.map(e => e[1]), backgroundColor: '#DFB868', borderRadius: 3 }] },
+    options: { ...CHART_DEFAULTS, indexAxis: 'y',
+      plugins: { ...CHART_DEFAULTS.plugins, legend: { display: false } },
+      scales: { x: { beginAtZero: true, ticks: { precision: 0 } } } }
+  });
+}
+
+// v2: Single-shot vs Continuous blocks
+function renderCh14() {
+  let single = 0, cont = 0, unknown = 0;
+  filteredCases.forEach(c => {
+    (c.blockDetails || []).forEach(bd => {
+      if (!bd) return;
+      if (bd.type === 'Single-shot') single++;
+      else if (bd.type === 'Continuous') cont++;
+      else unknown++;
+    });
+  });
+  const canvas = document.getElementById('ch14');
+  if (!canvas) return;
+  const total = single + cont + unknown;
+  if (total === 0) {
+    drawEmptyChartMessage(canvas, 'No block type data yet');
+    return;
+  }
+  const labels = [];
+  const data = [];
+  const colors = [];
+  if (single) { labels.push('Single-shot'); data.push(single); colors.push('#C9A14A'); }
+  if (cont) { labels.push('Continuous (catheter)'); data.push(cont); colors.push('#800020'); }
+  if (unknown) { labels.push('Unspecified'); data.push(unknown); colors.push('#9B8088'); }
+  charts.ch14 = new Chart(canvas, {
+    type: 'doughnut',
+    data: { labels, datasets: [{ data, backgroundColor: colors }] },
+    options: { ...CHART_DEFAULTS }
+  });
+}
+
+// v2: GA technique split (Volatile / TIVA / Both)
+function renderCh15() {
+  const m = {};
+  filteredCases.forEach(c => {
+    if (c.anaesthesiaType === 'GA') {
+      const t = c.gaTechnique || 'Unspecified';
+      m[t] = (m[t] || 0) + 1;
+    }
+  });
+  const canvas = document.getElementById('ch15');
+  if (!canvas) return;
+  const entries = Object.entries(m);
+  if (entries.length === 0) {
+    drawEmptyChartMessage(canvas, 'No GA cases yet');
+    return;
+  }
+  const colorMap = {
+    'Volatile': '#C9A14A',
+    'TIVA': '#800020',
+    'Volatile + TIVA': '#DFB868',
+    'Unspecified': '#9B8088'
+  };
+  charts.ch15 = new Chart(canvas, {
+    type: 'doughnut',
+    data: { labels: entries.map(e => e[0]),
+      datasets: [{ data: entries.map(e => e[1]),
+        backgroundColor: entries.map(e => colorMap[e[0]] || '#6B4A52') }] },
+    options: { ...CHART_DEFAULTS }
+  });
+}
+
+// v3: Surgical Approach split
+function renderCh16() {
+  const m = {};
+  filteredCases.forEach(c => {
+    if (c.surgicalApproach) m[c.surgicalApproach] = (m[c.surgicalApproach] || 0) + 1;
+  });
+  const canvas = document.getElementById('ch16');
+  if (!canvas) return;
+  const entries = Object.entries(m);
+  if (entries.length === 0) { drawEmptyChartMessage(canvas, 'No surgical approach data yet'); return; }
+  const colorMap = {
+    'Open': '#800020',
+    'Laparoscopic': '#C9A14A',
+    'Robotic': '#DFB868',
+    'Endoscopic': '#7A3A4D'
+  };
+  charts.ch16 = new Chart(canvas, {
+    type: 'doughnut',
+    data: { labels: entries.map(e => e[0]),
+      datasets: [{ data: entries.map(e => e[1]),
+        backgroundColor: entries.map(e => colorMap[e[0]] || '#6B4A52') }] },
+    options: { ...CHART_DEFAULTS }
+  });
+}
+
+// v3: Continuous Catheters placed (count by type)
+function renderCh17() {
+  const m = {};
+  filteredCases.forEach(c => {
+    (c.catheters || []).forEach(k => { m[k] = (m[k] || 0) + 1; });
+  });
+  const canvas = document.getElementById('ch17');
+  if (!canvas) return;
+  const entries = Object.entries(m).sort((a,b) => b[1] - a[1]);
+  if (entries.length === 0) { drawEmptyChartMessage(canvas, 'No catheter placements yet'); return; }
+  charts.ch17 = new Chart(canvas, {
+    type: 'bar',
+    data: { labels: entries.map(e => e[0]),
+      datasets: [{ label: 'Count', data: entries.map(e => e[1]), backgroundColor: '#B8860B', borderRadius: 3 }] },
+    options: { ...CHART_DEFAULTS, indexAxis: 'y',
+      plugins: { ...CHART_DEFAULTS.plugins, legend: { display: false } },
+      scales: { x: { beginAtZero: true, ticks: { precision: 0 } } } }
+  });
+}
+
+// v3: Spinal Needle Type
+function renderCh18() {
+  const m = {};
+  filteredCases.forEach(c => {
+    if (c.spinalDetails && c.spinalDetails.needleType) {
+      const n = c.spinalDetails.needleType;
+      m[n] = (m[n] || 0) + 1;
+    }
+  });
+  const canvas = document.getElementById('ch18');
+  if (!canvas) return;
+  const entries = Object.entries(m);
+  if (entries.length === 0) { drawEmptyChartMessage(canvas, 'No spinal needle data yet'); return; }
+  const colorMap = {
+    'Whitacre (pencil point)': '#C9A14A',
+    'Quincke (cutting)': '#800020'
+  };
+  charts.ch18 = new Chart(canvas, {
+    type: 'doughnut',
+    data: { labels: entries.map(e => e[0]),
+      datasets: [{ data: entries.map(e => e[1]),
+        backgroundColor: entries.map(e => colorMap[e[0]] || '#6B4A52') }] },
+    options: { ...CHART_DEFAULTS }
+  });
+}
+
+// v3: Catheters placed per month (line)
+function renderCh19() {
+  const months = lastNMonths(12);
+  const counts = months.map(m =>
+    filteredCases.filter(c => String(c.date || '').startsWith(m.key) && c.catheters && c.catheters.length > 0).length
+  );
+  const canvas = document.getElementById('ch19');
+  if (!canvas) return;
+  charts.ch19 = new Chart(canvas, {
+    type: 'line',
+    data: { labels: months.map(m => m.label),
+      datasets: [{ label: 'Cases with catheter', data: counts, borderColor: '#B8860B',
+        backgroundColor: 'rgba(245,124,0,0.15)', fill: true, tension: 0.3,
+        pointBackgroundColor: '#B8860B', pointRadius: 4, pointHoverRadius: 6 }] },
+    options: { ...CHART_DEFAULTS,
+      plugins: { ...CHART_DEFAULTS.plugins, legend: { display: false } },
+      scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }
+  });
+}
+
+// v3: Patient Origin (Ward vs ICU)
+function renderCh20() {
+  const m = {};
+  filteredCases.forEach(c => {
+    if (c.patientFrom) m[c.patientFrom] = (m[c.patientFrom] || 0) + 1;
+  });
+  const canvas = document.getElementById('ch20');
+  if (!canvas) return;
+  const entries = Object.entries(m);
+  if (entries.length === 0) { drawEmptyChartMessage(canvas, 'No patient origin data yet'); return; }
+  charts.ch20 = new Chart(canvas, {
+    type: 'doughnut',
+    data: { labels: entries.map(e => e[0]),
+      datasets: [{ data: entries.map(e => e[1]),
+        backgroundColor: entries.map(e => e[0] === 'ICU' ? '#C62828' : '#7A3A4D') }] },
+    options: { ...CHART_DEFAULTS }
+  });
+}
+
+function drawEmptyChartMessage(canvas, msg) {
+  const ctx = canvas.getContext('2d');
+  const rect = canvas.getBoundingClientRect();
+  canvas.width = rect.width;
+  canvas.height = rect.height;
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = '#9B8088';
+  ctx.font = '13px DM Sans, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(msg, canvas.width / 2, canvas.height / 2);
+}
+
+/* ============================================================
+   DATA TABLE
+   ============================================================ */
+function renderDataTable() {
+  document.getElementById('tableCount').textContent = filteredCases.length;
+  const tbody = document.querySelector('#dataTable tbody');
+
+  if (filteredCases.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="11" style="text-align:center;padding:30px;color:var(--text-muted);">No cases match the current filters.</td></tr>';
+    return;
+  }
+
+  const shortName = n => String(n).replace(/^Dr\s+/, '');
+  tbody.innerHTML = filteredCases.map(c => {
+    const specialCount = ((c.airway||[]).length + (c.olv||[]).length + (c.blocks||[]).length + (c.lines||[]).length + (c.otherSpecial||[]).length);
+    const compCount = (c.complications || []).length;
+    return `<tr data-id="${escapeAttr(c.id)}">
+      <td class="mono">${formatDate(c.date)}</td>
+      <td>${escapeHtml(shortName(c.doctor))}</td>
+      <td>${escapeHtml(c.specialty || '')}</td>
+      <td>${escapeHtml(c.procedure || '—')}</td>
+      <td>${escapeHtml(c.anaesthesiaType || '')}</td>
+      <td>${escapeHtml(c.asaGrade || '—')}</td>
+      <td>${escapeHtml(c.location || '')}</td>
+      <td class="mono">${formatDuration(c.durationMin)}</td>
+      <td>${c.electiveEmergency === 'Emergency' ? '<span class="badge badge-emergency">Em</span>' : '<span class="badge badge-elective">El</span>'}</td>
+      <td>${specialCount > 0 ? specialCount : '—'}</td>
+      <td>${compCount > 0 ? `<span class="badge badge-complications">${compCount}</span>` : '—'}</td>
+    </tr>`;
+  }).join('');
+
+  tbody.querySelectorAll('tr[data-id]').forEach(tr => {
+    tr.addEventListener('click', () => openCaseModal(tr.getAttribute('data-id')));
+  });
+}
+
+function openCaseModal(id) {
+  const c = allCases.find(x => String(x.id) === String(id));
+  if (!c) return;
+  const body = document.getElementById('modalBody');
+  body.innerHTML = `
+    <div style="margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid var(--border);">
+      <div class="mono" style="font-size:14px;color:var(--navy);font-weight:600;">${formatDate(c.date)} · ${escapeHtml(c.doctor)}</div>
+      <div style="color:var(--text-muted);font-size:13px;margin-top:2px;">${escapeHtml(c.specialty)} · ${escapeHtml(c.location)}</div>
+    </div>
+    <div class="detail-row"><div class="k">Procedure</div><div class="v">${escapeHtml(c.procedure || '—')}</div></div>
+    <div class="detail-row"><div class="k">Anaesthesia</div><div class="v">${escapeHtml(c.anaesthesiaType)}${c.addons && c.addons.length ? ' + ' + c.addons.map(escapeHtml).join(', ') : ''}</div></div>
+    <div class="detail-row"><div class="k">E/E</div><div class="v">${escapeHtml(c.electiveEmergency)}</div></div>
+    <div class="detail-row"><div class="k">Duration</div><div class="v">${formatDuration(c.durationMin)}</div></div>
+    ${renderCaseDetailHtml(c)}
+  `;
+  document.getElementById('caseModal').classList.add('show');
+}
+
+/* ============================================================
+   EXPORT
+   ============================================================ */
+function exportCsv() {
+  if (filteredCases.length === 0) { showToast('No cases to export', true); return; }
+  const headers = [
+    'Date','Doctor','SecondAnaesthetist','Specialty','SurgicalApproach','Procedure',
+    'Location','PatientFrom','ElectiveEmergency','AnaesthesiaType','GATechnique','SedationDepth',
+    'SpinalDetails','EpiduralDetails','CSEDetails','MACDetails',
+    'Addons','ASAGrade','PatientAge','PatientSex','DurationMin',
+    'Airway','OLV','SpecialAnalgesia',
+    'Blocks','BlockDetails','BlockGuidance','Catheters',
+    'Lines','Monitoring','OtherSpecial','Complications','Notes','CreatedAt'
+  ];
+  const fmtJson = (obj) => obj ? Object.entries(obj).filter(([,v]) => v != null && v !== '').map(([k,v]) => k + ':' + v).join('; ') : '';
+  const rows = filteredCases.map(c => [
+    c.date, c.doctor, c.secondAnaesthetist || '',
+    c.specialty, c.surgicalApproach || '', c.procedure,
+    c.location, c.patientFrom || '',
+    c.electiveEmergency, c.anaesthesiaType,
+    c.gaTechnique || '', c.sedationDepth || '',
+    fmtJson(c.spinalDetails), fmtJson(c.epiduralDetails), fmtJson(c.cseDetails), fmtJson(c.macDetails),
+    (c.addons || []).join('; '), c.asaGrade, c.patientAge, c.patientSex, c.durationMin,
+    (c.airway || []).join('; '), (c.olv || []).join('; '),
+    (c.specialAnalgesia || []).join('; '),
+    (c.blocks || []).join('; '),
+    summariseBlockDetailsForCsv(c.blockDetails),
+    c.blockGuidance || '',
+    (c.catheters || []).join('; '),
+    (c.lines || []).join('; '),
+    (c.monitoring || []).join('; '),
+    (c.otherSpecial || []).join('; '),
+    (c.complications || []).join('; '), c.notes || '', c.createdAt
+  ]);
+
+  const esc = v => {
+    const s = v == null ? '' : String(v);
+    return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+  };
+  const csv = [headers.join(','), ...rows.map(r => r.map(esc).join(','))].join('\n');
+
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const stamp = new Date().toISOString().slice(0,10);
+  a.href = url; a.download = `kims_ecity_anaesthesia_${stamp}.csv`;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showToast('CSV exported ✓');
+}
+
+// Flatten blockDetails to a readable string per case for CSV
+function summariseBlockDetailsForCsv(details) {
+  if (!Array.isArray(details) || details.length === 0) return '';
+  return details.map(d => {
+    const parts = [d.block];
+    if (d.type) parts.push(d.type);
+    if (d.drug) {
+      const dv = [];
+      if (d.conc) dv.push(d.conc);
+      if (d.dose) dv.push(d.dose + 'mg');
+      if (d.volume) dv.push(d.volume + 'mL');
+      parts.push(d.drug + (dv.length ? ' ' + dv.join(' ') : ''));
+    }
+    if (d.side) parts.push(d.side);
+    if (d.timing) parts.push(d.timing);
+    if (d.adjuvants && d.adjuvants.length) parts.push('+' + d.adjuvants.join('/'));
+    if (d.catheterDepth) parts.push('cath ' + d.catheterDepth + 'cm' + (d.tunnelled ? ' tunnelled' : ''));
+    return parts.join(', ');
+  }).join(' | ');
+}
+
+function printReport() { window.print(); }
+
+function monthlyWorkloadReport() {
+  const now = new Date();
+  const curMonth = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0');
+  const monthLabel = now.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
+
+  applyFilters();
+  const monthCases = filteredCases.filter(c => String(c.date || '').startsWith(curMonth));
+
+  const byDoc = {};
+  DOCTORS.forEach(d => {
+    byDoc[d.name] = { cases: 0, minutes: 0, blocks: 0, lines: 0, special: 0, complications: 0 };
+  });
+  monthCases.forEach(c => {
+    if (!byDoc[c.doctor]) byDoc[c.doctor] = { cases: 0, minutes: 0, blocks: 0, lines: 0, special: 0, complications: 0 };
+    byDoc[c.doctor].cases += 1;
+    byDoc[c.doctor].minutes += c.durationMin || 0;
+    byDoc[c.doctor].blocks += (c.blocks || []).length;
+    byDoc[c.doctor].lines += (c.lines || []).length;
+    byDoc[c.doctor].special += (c.airway || []).length + (c.olv || []).length + (c.otherSpecial || []).length;
+    if (c.complications && c.complications.length > 0) byDoc[c.doctor].complications += 1;
+  });
+
+  const rows = Object.entries(byDoc)
+    .map(([name, s]) => ({ name, ...s, hours: (s.minutes/60).toFixed(1),
+        compRate: s.cases > 0 ? ((s.complications/s.cases)*100).toFixed(1) : '0.0' }))
+    .sort((a,b) => b.cases - a.cases);
+
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>KIMS Ecity Monthly Workload Report — ${monthLabel}</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+body { font-family: 'DM Sans', sans-serif; padding: 30px; color: #2B1418; max-width: 1000px; margin: 0 auto; }
+.hosp { font-size: 11px; color: #C9A14A; font-weight: 600; text-transform: uppercase; letter-spacing: 1.4px; margin-bottom: 4px; }
+h1 { color: #800020; font-size: 22px; margin-bottom: 4px; letter-spacing: -0.3px; }
+.sub { color: #6B4A52; font-size: 13px; margin-bottom: 24px; }
+table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+th { background: #800020; color: white; padding: 10px 12px; text-align: left; font-size: 12px; text-transform: uppercase; letter-spacing: 0.4px; font-weight: 600; }
+td { padding: 10px 12px; border-bottom: 1px solid #E8DCD2; font-size: 13px; }
+tr:nth-child(even) td { background: #FBF3F1; }
+.mono { font-family: 'DM Mono', monospace; font-weight: 500; }
+.num { text-align: right; }
+.summary { background: #F4E8C8; padding: 16px; border-radius: 8px; margin-top: 20px; font-size: 13px; }
+.summary b { color: #A6822F; }
+.print-btn { background: #C9A14A; color: white; border: none; padding: 10px 20px; border-radius: 6px; font-weight: 600; cursor: pointer; font-family: inherit; }
+@media print { .print-btn { display: none; } body { padding: 10mm; } @page { size: A4; margin: 12mm; } }
+</style></head><body>
+<div class="hosp">KIMS Hospital · Electronic City · Anaesthesia Department</div>
+<h1>Monthly Workload Report</h1>
+<div class="sub">${monthLabel} · ${monthCases.length} total cases · Generated ${now.toLocaleString('en-GB')}</div>
+<button class="print-btn" onclick="window.print()">⎙ Print this report</button>
+<table>
+<thead><tr><th>Doctor</th><th class="num">Cases</th><th class="num">Hours</th><th class="num">Blocks</th><th class="num">Lines</th><th class="num">Special</th><th class="num">Comp.</th><th class="num">Comp. Rate</th></tr></thead>
+<tbody>
+${rows.map(r => `<tr>
+  <td>${r.name}</td>
+  <td class="num mono">${r.cases}</td>
+  <td class="num mono">${r.hours}</td>
+  <td class="num mono">${r.blocks}</td>
+  <td class="num mono">${r.lines}</td>
+  <td class="num mono">${r.special}</td>
+  <td class="num mono">${r.complications}</td>
+  <td class="num mono">${r.compRate}%</td>
+</tr>`).join('')}
+</tbody></table>
+<div class="summary">
+<b>Department totals for ${monthLabel}:</b>
+${monthCases.length} cases ·
+${(monthCases.reduce((s,c)=>s+(c.durationMin||0),0)/60).toFixed(1)} hours ·
+${monthCases.reduce((s,c)=>s+((c.blocks||[]).length),0)} blocks ·
+${monthCases.reduce((s,c)=>s+((c.lines||[]).length),0)} invasive lines
+</div>
+</body></html>`;
+  const w = window.open('', '_blank');
+  if (!w) { showToast('Pop-up blocked — allow pop-ups to view report', true); return; }
+  w.document.open(); w.document.write(html); w.document.close();
+}
+
+/* ============================================================
+   INIT
+   ============================================================ */
+document.addEventListener('DOMContentLoaded', async () => {
+  populateDoctorSelect();
+  initForm();
+  initAccordions();
+  initToggleGroups();
+  initDashboardFilters();
+
+  const us = document.querySelector('[data-group="bguidance"] [data-val="Ultrasound"]');
+  if (us) us.classList.add('on');
+
+  document.getElementById('loginBtn').addEventListener('click', login);
+  document.getElementById('doctorSelect').addEventListener('keydown', e => { if (e.key === 'Enter') login(); });
+  document.getElementById('logoutBtn').addEventListener('click', logout);
+  document.querySelectorAll('.nav-btn[data-view]').forEach(b => {
+    b.addEventListener('click', () => setView(b.getAttribute('data-view')));
+  });
+  document.getElementById('caseForm').addEventListener('submit', submitCase);
+  document.getElementById('exportCsvBtn').addEventListener('click', exportCsv);
+  document.getElementById('printBtn').addEventListener('click', printReport);
+  document.getElementById('monthlyBtn').addEventListener('click', monthlyWorkloadReport);
+
+  document.getElementById('modalCloseBtn').addEventListener('click', () => {
+    document.getElementById('caseModal').classList.remove('show');
+  });
+  document.getElementById('caseModal').addEventListener('click', e => {
+    if (e.target.id === 'caseModal') document.getElementById('caseModal').classList.remove('show');
+  });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') document.getElementById('caseModal').classList.remove('show');
+  });
+
+  checkConnection();
+
+  const saved = sessionStorage.getItem('currentUser');
+  if (saved) {
+    try {
+      currentUser = JSON.parse(saved);
+      showApp();
+    } catch {}
+  }
+});
+</script>
+</body>
+</html>
