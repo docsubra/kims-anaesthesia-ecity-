@@ -4374,6 +4374,90 @@ function showToast(msg, isError = false) {
 /* ============================================================
    LOAD CASES FROM GOOGLE SHEETS (with local fallback)
    ============================================================ */
+
+// v5: Compatibility shim — maps v4 (and v3) column names onto v5 field names.
+// Existing v4 rows have data in columns like caseDate/age/urgency/techniques etc.
+// This function fills missing v5 fields by looking at v4 equivalents.
+// New v5 rows already have proper fields, so the shim is a no-op for them.
+function mapLegacyFields(c) {
+  // Helper: split a CSV-ish string into an array
+  const splitCsv = (s) => typeof s === 'string' && s.length
+    ? s.split(/\s*[,;]\s*/).filter(Boolean) : [];
+
+  // ---- Identity / timing ----
+  if (!c.date && c.caseDate) c.date = c.caseDate;
+  if (!c.createdAt && c.timestamp) c.createdAt = c.timestamp;
+  if (!c.id) c.id = 'legacy_' + (c.timestamp || c.caseDate || Math.random().toString(36).slice(2));
+
+  // ---- Patient ----
+  if ((c.patientAge === '' || c.patientAge == null) && c.age != null && c.age !== '') c.patientAge = c.age;
+  if (!c.patientSex && c.sex) c.patientSex = c.sex;
+
+  // ---- Case ----
+  if (!c.electiveEmergency && c.urgency) c.electiveEmergency = c.urgency;
+
+  // ---- Anaesthesia ----
+  // v4 stored "techniques" as a CSV like "GA, Spinal" — pick the first as the primary type
+  if (!c.anaesthesiaType && c.techniques) {
+    const list = splitCsv(c.techniques);
+    // Map common v4 codes to v5 names
+    const codeMap = {
+      'GA': 'GA', 'SA': 'Spinal', 'Spinal': 'Spinal',
+      'EPI': 'Epidural', 'Epidural': 'Epidural',
+      'CSE': 'CSE',
+      'PNB': 'Block', 'Block': 'Block',
+      'TAP': 'Block',
+      'MAC': 'Sedation/MAC', 'Sedation': 'Sedation/MAC',
+      'Local': 'Local+Monitoring', 'Local+Monitoring': 'Local+Monitoring'
+    };
+    if (list.length) c.anaesthesiaType = codeMap[list[0]] || list[0];
+  }
+  if (!c.gaTechnique && c.ga_type) c.gaTechnique = c.ga_type;
+
+  // ---- Anaesthetists ----
+  if (!c.secondAnaesthetist && c.anaesthetist2) c.secondAnaesthetist = c.anaesthetist2;
+  if (!c.thirdAnaesthetist && c.anaesthetist3) c.thirdAnaesthetist = c.anaesthetist3;
+
+  // ---- Spinal / IT opioids ----
+  // v4 had flat columns; lift them into the v5 nested spinalDetails object
+  if ((c.it_morphine_mcg !== '' && c.it_morphine_mcg != null) ||
+      (c.it_fentanyl_mcg !== '' && c.it_fentanyl_mcg != null) ||
+      c.sa_drug || c.sa_dose) {
+    if (!c.spinalDetails || typeof c.spinalDetails === 'string') {
+      try { c.spinalDetails = c.spinalDetails ? JSON.parse(c.spinalDetails) : {}; }
+      catch { c.spinalDetails = {}; }
+    }
+    if (c.it_morphine_mcg !== '' && c.it_morphine_mcg != null && c.spinalDetails.itMorphineMcg == null) {
+      c.spinalDetails.itMorphineMcg = Number(c.it_morphine_mcg);
+    }
+    if (c.it_fentanyl_mcg !== '' && c.it_fentanyl_mcg != null && c.spinalDetails.itFentanylMcg == null) {
+      c.spinalDetails.itFentanylMcg = Number(c.it_fentanyl_mcg);
+    }
+  }
+
+  // ---- Lift v4 epidural columns into v5 epiduralDetails ----
+  if ((c.epi_drug || c.epi_volume || c.epi_conc) && !c.epiduralDetails) {
+    c.epiduralDetails = {
+      drug: c.epi_drug || null,
+      volume: c.epi_volume || null,
+      conc: c.epi_conc || null
+    };
+  }
+
+  // ---- v4 monitoring/complications were comma-separated strings ----
+  if (typeof c.monitoring === 'string' && c.monitoring.length) {
+    c.monitoring = splitCsv(c.monitoring);
+  }
+  if (typeof c.complications === 'string' && c.complications.length && c.complications !== 'None') {
+    c.complications = splitCsv(c.complications);
+  } else if (c.complications === 'None' || c.complications === 'Minor' || c.complications === 'Major') {
+    // v4 had a single severity word — keep as a single-item array so v5 doesn't choke
+    c.complications = c.complications === 'None' ? [] : [c.complications];
+  }
+
+  return c;
+}
+
 async function loadAllCases() {
   setSyncDot('syncing');
   // Start with local cache for instant UI
@@ -4381,8 +4465,10 @@ async function loadAllCases() {
   if (isConfigured()) {
     try {
       const remote = await apiGetCases();
+      // v5: apply legacy v4 compatibility shim BEFORE normalising
+      const shimmed = remote.map(mapLegacyFields);
       // Normalise — sheet may return strings for arrays, ensure shape
-      allCases = remote.map(c => {
+      allCases = shimmed.map(c => {
         let bd = c.blockDetails;
         if (typeof bd === 'string' && bd.length) {
           try { bd = JSON.parse(bd); } catch { bd = []; }
