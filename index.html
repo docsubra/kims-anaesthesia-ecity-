@@ -4375,60 +4375,128 @@ function showToast(msg, isError = false) {
    LOAD CASES FROM GOOGLE SHEETS (with local fallback)
    ============================================================ */
 
-// v5: Comprehensive legacy data shim. Handles two situations:
-//   (A) Pure name-mapping: v4 column names → v5 field names.
-//   (B) Column-SHIFT corrections: detects when data has landed in
-//       the wrong column (e.g., ASA grades appearing in `specialty`,
-//       durations in `location`, ages in `procedure`, ISO timestamps
-//       in `doctor`). These shifts can occur when a sheet was
-//       previously written by a different schema (e.g., Mahadevapura)
-//       and later relabelled by Ecity INIT.
+// v5: Precise legacy-data shim.
+//
+// HISTORICAL DATA SITUATION (verified by direct CSV inspection):
+//   The Ecity sheet's row-1 headers were written by the v3 Apps Script
+//   (timestamp, hospital, doctor, role, caseDate, patientId, age, sex,
+//    asaGrade, urgency, specialty, procedure, surgeon, location, ...)
+//   But the ACTUAL DATA in 55 of 57 rows was written by a Mahadevapura-style
+//   payload, whose field order is completely different:
+//   (id, createdAt, date, doctor, specialty, location, procedure,
+//    electiveEmergency, anaesthesiaType, addons, asaGrade, patientAge,
+//    patientSex, durationMin, airway, olv, blocks, blockGuidance, ...).
+//
+// The result: header "specialty" actually contains the ASA grade, "asaGrade"
+// actually contains the anaesthesia type, "location" actually contains the
+// duration, etc.
+//
+// This shim:
+//   1. Detects each row's actual format by checking col 1's content
+//      - "c_<digits>_<chars>" → Mahadevapura-payload-into-v3-headers row
+//      - ISO datetime         → native v3 Ecity row (writes by v4 backend)
+//      - empty                → native v5 row (writes by v5 backend, data
+//                                is in cols 65+ which use real field names)
+//   2. For Mahadevapura rows: does a POSITIONAL remap using v3 header names
+//      as positional placeholders, returning a fresh v5-shaped object.
+//   3. For v3 rows: does a NAME remap (caseDate → date, age → patientAge, etc.)
+//   4. For v5 rows: no transformation needed (header names match).
 function mapLegacyFields(c) {
-  // -- Helpers ----------------------------------------------------
-  const splitCsv = (s) => typeof s === 'string' && s.length
-    ? s.split(/\s*[,;|]\s*/).filter(Boolean) : [];
-  const isAsaGrade = (v) => /^[IVX]+(\s*E)?$/i.test(String(v || '').trim());
-  const isAnaesType = (v) => /^(GA|SA|Spinal|Epidural|CSE|Block|PNB|TAP|MAC|Local|Sedation|Sedation\/MAC|RA|Local\+Monitoring)$/i.test(String(v || '').trim());
-  const isIsoTs = (v) => /^\d{4}-\d{2}-\d{2}T\d{2}:/.test(String(v || ''));
-  const isNumLike = (v) => {
-    if (v === null || v === undefined || v === '') return false;
-    const s = String(v).trim();
-    if (s === '') return false;
-    return /^-?\d+(\.\d+)?$/.test(s);
+  const splitArr = (s) => {
+    if (Array.isArray(s)) return s;
+    if (typeof s === 'string' && s.length) {
+      return s.split(/\s*\|\s*|\s*,\s*|\s*;\s*/).filter(Boolean);
+    }
+    return [];
   };
-  const ADDON_VALUES = ['nerve block', 'iv sedation', 'epidural top-up'];
-  const isAddonValue = (v) => {
-    if (!v) return false;
-    const lc = String(v).toLowerCase();
-    return ADDON_VALUES.some(a => lc.includes(a));
+  const tryJson = (s) => {
+    if (!s) return null;
+    if (typeof s === 'object') return s;
+    if (typeof s !== 'string') return null;
+    try { return JSON.parse(s); } catch { return null; }
   };
-  const trimDate = (v) => {
-    if (!v) return v;
-    const s = String(v);
-    // ISO datetime → YYYY-MM-DD
-    if (/^\d{4}-\d{2}-\d{2}T/.test(s)) return s.substring(0, 10);
-    // Date object that survived as a string
-    if (s instanceof Date) return s.toISOString().substring(0, 10);
-    return s;
+  const toNum = (v) => {
+    if (v === '' || v == null) return null;
+    const n = Number(v);
+    return isNaN(n) ? null : n;
   };
 
-  // -- (A) Pure name-mapping (v4 → v5) ---------------------------
+  // -- DETECTION -------------------------------------------------
+  const ts = c.timestamp;
+  const isMahLegacy = typeof ts === 'string' && /^c_\d+_/.test(ts);
+
+  if (isMahLegacy) {
+    // -- POSITIONAL REMAP for Mahadevapura-format legacy rows ----
+    // Every v3 header below actually holds the field commented next to it.
+
+    // patientSex was stored as "M" / "F" — normalise to Male / Female
+    const sexRaw = c.surgeon;
+    const patientSex = sexRaw === 'M' ? 'Male'
+                     : sexRaw === 'F' ? 'Female'
+                     : sexRaw || '';
+
+    return {
+      id:                 ts,                                    // col 1
+      createdAt:          c.hospital || '',                      // col 2
+      date:               typeof c.doctor === 'string'           // col 3
+                            ? c.doctor.substring(0, 10) : (c.doctor || ''),
+      doctor:             c.role || '',                          // col 4
+      specialty:          c.caseDate || '',                      // col 5
+      location:           c.patientId || '',                     // col 6
+      procedure:          c.age || '',                           // col 7
+      electiveEmergency:  c.sex || '',                           // col 8
+      anaesthesiaType:    c.asaGrade || '',                      // col 9
+      addons:             splitArr(c.urgency),                   // col 10
+      asaGrade:           c.specialty || '',                     // col 11
+      patientAge:         toNum(c.procedure),                    // col 12
+      patientSex:         patientSex,                            // col 13
+      durationMin:        toNum(c.location) || 0,                // col 14
+      airway:             splitArr(c.durationMin),               // col 15
+      olv:                splitArr(c.techniques),                // col 16
+      blocks:             splitArr(c.ga_type),                   // col 17
+      blockGuidance:      c.ga_airway || '',                     // col 18
+      lines:              splitArr(c.ga_induction),              // col 19
+      otherSpecial:       splitArr(c.ga_maintenance),            // col 20
+      complications:      splitArr(c.ga_relaxant),               // col 21
+      notes:              c.ga_analgesia || '',                  // col 22
+      gaTechnique:        c.sa_drug || '',                       // col 23
+      sedationDepth:      c.sa_dose || '',                       // col 24
+      blockDetails:       tryJson(c.sa_volume) || [],            // col 25
+      surgicalApproach:   c.sa_adjuvant || '',                   // col 26
+      secondAnaesthetist: c.sa_level || '',                      // col 27
+      patientFrom:        c.sa_height || '',                     // col 28
+      spinalDetails:      tryJson(c.epi_drug),                   // col 29
+      epiduralDetails:    tryJson(c.epi_volume),                 // col 30
+      cseDetails:         tryJson(c.epi_conc),                   // col 31
+      macDetails:         tryJson(c.epi_adjuvant),               // col 32
+      specialAnalgesia:   splitArr(c.epi_depth),                 // col 33
+      catheters:          splitArr(c.epi_tunnel),                // col 34
+      monitoring:         splitArr(c.cse_spinal),                // col 35
+      comorbidities:      splitArr(c.cse_epi),                   // col 36
+      thirdAnaesthetist:  c.cse_depth || '',                     // col 37
+      dualTechnique:      splitArr(c.cse_tunnel),                // col 38
+      postopDispo:        c.pnb_name || ''                       // col 39
+    };
+  }
+
+  // -- v3 Ecity rows (headers match v3 names; need v3→v5 mapping) ---
   if (!c.date && c.caseDate) c.date = c.caseDate;
   if (!c.createdAt && c.timestamp) c.createdAt = c.timestamp;
-  if (!c.id) c.id = 'legacy_' + (c.timestamp || c.caseDate || c.date || Math.random().toString(36).slice(2));
+  if (!c.id) c.id = 'legacy_' + (c.timestamp || c.caseDate || Math.random().toString(36).slice(2));
 
-  if ((c.patientAge === '' || c.patientAge == null) && c.age != null && c.age !== '') c.patientAge = c.age;
+  if ((c.patientAge === '' || c.patientAge == null) && c.age != null && c.age !== '') {
+    c.patientAge = Number(c.age) || null;
+  }
   if (!c.patientSex && c.sex) c.patientSex = c.sex;
   if (!c.electiveEmergency && c.urgency) c.electiveEmergency = c.urgency;
 
   if (!c.anaesthesiaType && c.techniques) {
-    const list = splitCsv(c.techniques);
+    const list = splitArr(c.techniques);
     const codeMap = {
       'GA': 'GA', 'SA': 'Spinal', 'Spinal': 'Spinal',
       'EPI': 'Epidural', 'Epidural': 'Epidural',
       'CSE': 'CSE',
-      'PNB': 'Block', 'Block': 'Block',
-      'TAP': 'Block',
+      'PNB': 'Block', 'Block': 'Block', 'TAP': 'Block',
       'MAC': 'Sedation/MAC', 'Sedation': 'Sedation/MAC',
       'Local': 'Local+Monitoring', 'Local+Monitoring': 'Local+Monitoring'
     };
@@ -4438,10 +4506,9 @@ function mapLegacyFields(c) {
   if (!c.secondAnaesthetist && c.anaesthetist2) c.secondAnaesthetist = c.anaesthetist2;
   if (!c.thirdAnaesthetist && c.anaesthetist3) c.thirdAnaesthetist = c.anaesthetist3;
 
-  // IT opioids lift to v5 nested spinalDetails
+  // IT opioids lift to spinalDetails
   if ((c.it_morphine_mcg !== '' && c.it_morphine_mcg != null) ||
-      (c.it_fentanyl_mcg !== '' && c.it_fentanyl_mcg != null) ||
-      c.sa_drug || c.sa_dose) {
+      (c.it_fentanyl_mcg !== '' && c.it_fentanyl_mcg != null)) {
     if (!c.spinalDetails || typeof c.spinalDetails === 'string') {
       try { c.spinalDetails = c.spinalDetails ? JSON.parse(c.spinalDetails) : {}; }
       catch { c.spinalDetails = {}; }
@@ -4454,92 +4521,17 @@ function mapLegacyFields(c) {
     }
   }
 
-  // -- (B) Column-shift correction (the meat) ---------------------
+  // Normalise array-typed fields if they arrived as strings
+  ['monitoring','complications','addons','airway','olv','blocks','lines',
+   'otherSpecial','specialAnalgesia','catheters','comorbidities','dualTechnique'
+  ].forEach(k => {
+    if (typeof c[k] === 'string') c[k] = splitArr(c[k]);
+  });
 
-  // B1. Date field — strip any time/timezone tail
-  c.date = trimDate(c.date);
-
-  // B2. Doctor field carrying an ISO timestamp → it's actually createdAt
-  if (isIsoTs(c.doctor)) {
-    if (!c.createdAt) c.createdAt = c.doctor;
-    c.doctor = '';
-  }
-
-  // B3. Specialty field carrying an ASA grade → swap with asaGrade
-  //     ASA field then often carries an anaesthesia-type code
-  if (isAsaGrade(c.specialty)) {
-    const realAsa = String(c.specialty).trim().toUpperCase();
-    // If asaGrade column has an anaesthesia type like "GA", lift it
-    if (isAnaesType(c.asaGrade)) {
-      if (!c.anaesthesiaType) c.anaesthesiaType = String(c.asaGrade).trim();
-    }
-    c.asaGrade = realAsa;
-    c.specialty = ''; // real specialty unknown — empty rather than misleading
-  }
-
-  // B4. Procedure field carrying a pure number → it's likely patient age
-  if (isNumLike(c.procedure) && (c.patientAge == null || c.patientAge === '' || isNaN(Number(c.patientAge)))) {
-    const n = Number(c.procedure);
-    if (n >= 0 && n <= 120) {
-      c.patientAge = n;
-      c.procedure = '';
-    }
-  }
-
-  // B5. Location field carrying a pure number → it's likely durationMin
-  if (isNumLike(c.location) && (c.durationMin == null || c.durationMin === '' || c.durationMin === 0)) {
-    const n = Number(c.location);
-    if (n > 0 && n <= 1440) {
-      c.durationMin = n;
-      c.location = '';
-    }
-  }
-
-  // B6. electiveEmergency carrying addon-style values → it's actually addons
-  if (isAddonValue(c.electiveEmergency)) {
-    if (!c.addons || c.addons.length === 0) {
-      c.addons = splitCsv(c.electiveEmergency);
-    }
-    c.electiveEmergency = '';
-  }
-
-  // B7. surgeon field carrying a sex value ("Male"/"Female") → it's patientSex
-  const sexLike = (v) => /^(Male|Female|Other|M|F)$/i.test(String(v || '').trim());
-  if (sexLike(c.surgeon) && !c.patientSex) {
-    c.patientSex = String(c.surgeon).trim();
-    c.surgeon = '';
-  }
-
-  // -- (C) Normalise arrays/types ---------------------------------
-  if (typeof c.monitoring === 'string' && c.monitoring.length) {
-    c.monitoring = splitCsv(c.monitoring);
-  }
-  if (typeof c.complications === 'string') {
-    if (c.complications === '' || c.complications === 'None') {
-      c.complications = [];
-    } else if (c.complications === 'Minor' || c.complications === 'Major') {
-      c.complications = [c.complications];
-    } else {
-      c.complications = splitCsv(c.complications);
-    }
-  }
-  if (typeof c.addons === 'string') c.addons = splitCsv(c.addons);
-  if (typeof c.airway === 'string') c.airway = splitCsv(c.airway);
-  if (typeof c.blocks === 'string') c.blocks = splitCsv(c.blocks);
-  if (typeof c.lines === 'string') c.lines = splitCsv(c.lines);
-  if (typeof c.olv === 'string') c.olv = splitCsv(c.olv);
-  if (typeof c.otherSpecial === 'string') c.otherSpecial = splitCsv(c.otherSpecial);
-  if (typeof c.specialAnalgesia === 'string') c.specialAnalgesia = splitCsv(c.specialAnalgesia);
-  if (typeof c.catheters === 'string') c.catheters = splitCsv(c.catheters);
-
-  // Lift v4 epidural columns into v5 epiduralDetails
-  if ((c.epi_drug || c.epi_volume || c.epi_conc) && !c.epiduralDetails) {
-    c.epiduralDetails = {
-      drug: c.epi_drug || null,
-      volume: c.epi_volume || null,
-      conc: c.epi_conc || null
-    };
-  }
+  // durationMin to number
+  if (c.durationMin) c.durationMin = Number(c.durationMin) || 0;
+  // patientAge to number
+  if (c.patientAge && typeof c.patientAge === 'string') c.patientAge = Number(c.patientAge) || null;
 
   return c;
 }
