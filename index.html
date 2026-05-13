@@ -4569,7 +4569,12 @@ async function loadAllCases() {
           blocks: Array.isArray(c.blocks) ? c.blocks : [],
           lines: Array.isArray(c.lines) ? c.lines : [],
           otherSpecial: Array.isArray(c.otherSpecial) ? c.otherSpecial : [],
-          complications: Array.isArray(c.complications) ? c.complications : [],
+          complications: (Array.isArray(c.complications) ? c.complications : [])
+            .filter(x => {
+              const s = String(x || '').trim().toLowerCase();
+              return s !== '' && s !== 'none' && s !== 'nil' &&
+                     s !== 'no complications' && s !== 'no complication';
+            }),
           blockDetails: bd,
           gaTechnique: c.gaTechnique || '',
           sedationDepth: c.sedationDepth || '',
@@ -5081,9 +5086,12 @@ function renderOcCh1() {
   charts.ocCh1 = new Chart(canvas, {
     type: 'line',
     data: { labels: months.map(m => m.label),
-      datasets: [{ label: 'Calls', data: counts, borderColor: '#800020',
-        backgroundColor: 'rgba(128,0,32,0.15)', fill: true, tension: 0.3,
-        pointBackgroundColor: '#800020', pointRadius: 4 }] },
+      datasets: [{ label: 'Calls', data: counts,
+        borderColor: '#800020', borderWidth: 3,
+        backgroundColor: gradientFill(canvas, '#800020', 0.45),
+        fill: true, tension: 0.35,
+        pointBackgroundColor: '#800020', pointBorderColor: '#fff', pointBorderWidth: 2,
+        pointRadius: 5, pointHoverRadius: 7 }] },
     options: { ...CHART_DEFAULTS,
       plugins: { ...CHART_DEFAULTS.plugins, legend: { display: false } },
       scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }
@@ -5100,8 +5108,10 @@ function renderOcCh2() {
   charts.ocCh2 = new Chart(canvas, {
     type: 'doughnut',
     data: { labels: ['Procedural', 'Non-procedural'],
-      datasets: [{ data: [proc, nonProc], backgroundColor: ['#F57C00', '#8A6A2A'] }] },
-    options: { ...CHART_DEFAULTS }
+      datasets: [{ data: [proc, nonProc],
+        backgroundColor: ['#800020', '#C9A14A'],
+        borderColor: '#fff', borderWidth: 2 }] },
+    options: { ...CHART_DEFAULTS, cutout: '55%' }
   });
 }
 
@@ -5119,7 +5129,9 @@ function renderOcCh3() {
   charts.ocCh3 = new Chart(canvas, {
     type: 'bar',
     data: { labels: entries.map(e => e[0]),
-      datasets: [{ data: entries.map(e => e[1]), backgroundColor: '#F57C00', borderRadius: 3 }] },
+      datasets: [{ data: entries.map(e => e[1]),
+        backgroundColor: paletteN(entries.length, 'spectrum'),
+        borderRadius: 5, borderSkipped: false }] },
     options: { ...CHART_DEFAULTS, indexAxis: 'y',
       plugins: { ...CHART_DEFAULTS.plugins, legend: { display: false } },
       scales: { x: { beginAtZero: true, ticks: { precision: 0 } } } }
@@ -5140,7 +5152,9 @@ function renderOcCh4() {
   charts.ocCh4 = new Chart(canvas, {
     type: 'bar',
     data: { labels: entries.map(e => e[0]),
-      datasets: [{ data: entries.map(e => e[1]), backgroundColor: '#8A6A2A', borderRadius: 3 }] },
+      datasets: [{ data: entries.map(e => e[1]),
+        backgroundColor: paletteN(entries.length, 'goldScale').reverse(),
+        borderRadius: 5, borderSkipped: false }] },
     options: { ...CHART_DEFAULTS, indexAxis: 'y',
       plugins: { ...CHART_DEFAULTS.plugins, legend: { display: false } },
       scales: { x: { beginAtZero: true, ticks: { precision: 0 } } } }
@@ -5161,7 +5175,9 @@ function renderOcCh5() {
   charts.ocCh5 = new Chart(canvas, {
     type: 'bar',
     data: { labels: entries.map(e => e[0]),
-      datasets: [{ data: entries.map(e => e[1]), backgroundColor: '#800020', borderRadius: 3 }] },
+      datasets: [{ data: entries.map(e => e[1]),
+        backgroundColor: paletteN(entries.length, 'spectrum'),
+        borderRadius: 5, borderSkipped: false }] },
     options: { ...CHART_DEFAULTS,
       plugins: { ...CHART_DEFAULTS.plugins, legend: { display: false } },
       scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }
@@ -5183,7 +5199,9 @@ function renderOcCh6() {
   charts.ocCh6 = new Chart(canvas, {
     type: 'bar',
     data: { labels: ['Morning','Afternoon','Evening','Night'],
-      datasets: [{ data: data, backgroundColor: ['#FFB300','#F57C00','#7E57C2','#1A237E'], borderRadius: 3 }] },
+      datasets: [{ data: data,
+        backgroundColor: colorsFor(['Morning','Afternoon','Evening','Night'], 'timeOfDay'),
+        borderRadius: 6, borderSkipped: false }] },
     options: { ...CHART_DEFAULTS,
       plugins: { ...CHART_DEFAULTS.plugins, legend: { display: false } },
       scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }
@@ -5204,8 +5222,9 @@ function renderOcCh7() {
     type: 'doughnut',
     data: { labels: ['Routine','Urgent','Emergency'],
       datasets: [{ data: [m.Routine, m.Urgent, m.Emergency],
-        backgroundColor: ['#8A6A2A','#F57C00','#D32F2F'] }] },
-    options: { ...CHART_DEFAULTS }
+        backgroundColor: colorsFor(['Routine','Urgent','Emergency'], 'urgency'),
+        borderColor: '#fff', borderWidth: 2 }] },
+    options: { ...CHART_DEFAULTS, cutout: '55%' }
   });
 }
 
@@ -5223,8 +5242,9 @@ function renderOcCh8() {
     type: 'doughnut',
     data: { labels: ['Completed','Stabilised','Escalated'],
       datasets: [{ data: [m.Completed, m.Stabilised, m.Escalated],
-        backgroundColor: ['#2E7D32','#FFA000','#D32F2F'] }] },
-    options: { ...CHART_DEFAULTS }
+        backgroundColor: colorsFor(['Completed','Stabilised','Escalated'], 'outcome'),
+        borderColor: '#fff', borderWidth: 2 }] },
+    options: { ...CHART_DEFAULTS, cutout: '55%' }
   });
 }
 
@@ -5242,7 +5262,9 @@ function renderOcCh9() {
   charts.ocCh9 = new Chart(canvas, {
     type: 'bar',
     data: { labels: entries.map(e => e[0].replace(/^Dr /, '')),
-      datasets: [{ data: entries.map(e => e[1]), backgroundColor: '#800020', borderRadius: 3 }] },
+      datasets: [{ data: entries.map(e => e[1]),
+        backgroundColor: paletteN(entries.length, 'spectrum'),
+        borderRadius: 5, borderSkipped: false }] },
     options: { ...CHART_DEFAULTS, indexAxis: 'y',
       plugins: { ...CHART_DEFAULTS.plugins, legend: { display: false } },
       scales: { x: { beginAtZero: true, ticks: { precision: 0 } } } }
@@ -5262,7 +5284,9 @@ function renderOcCh10() {
   charts.ocCh10 = new Chart(canvas, {
     type: 'bar',
     data: { labels: entries.map(e => e[0]),
-      datasets: [{ data: entries.map(e => e[1]), backgroundColor: '#5C0017', borderRadius: 3 }] },
+      datasets: [{ data: entries.map(e => e[1]),
+        backgroundColor: paletteN(entries.length, 'goldScale').reverse(),
+        borderRadius: 5, borderSkipped: false }] },
     options: { ...CHART_DEFAULTS, indexAxis: 'y',
       plugins: { ...CHART_DEFAULTS.plugins, legend: { display: false } },
       scales: { x: { beginAtZero: true, ticks: { precision: 0 } } } }
@@ -6018,7 +6042,83 @@ function renderSummary() {
 /* ============================================================
    CHARTS
    ============================================================ */
-const CHART_PALETTE = ['#800020','#800020','#A83248','#A83248','#C9A14A','#8A6A2A','#80CBC4','#5C6B80','#EBC5CC','#8695A8','#D32F2F','#F57C00'];
+const CHART_PALETTE = PALETTE.spectrum;
+/* ============================================================
+   ECITY DASHBOARD PALETTE — burgundy / gold / wine / rose family
+   16 distinct on-brand colours for categorical charts, plus
+   semantic colour maps for known categories.
+   ============================================================ */
+const PALETTE = {
+  // Rich 16-colour spectrum for categorical charts (rotates if more bars)
+  spectrum: [
+    '#800020', '#C9A14A', '#A83248', '#8A6A2A',
+    '#722F37', '#D4818C', '#5D2538', '#B8794A',
+    '#C45872', '#A08755', '#8A5A6A', '#D4B896',
+    '#6B3B50', '#E0A9B5', '#5C0017', '#E4C98B'
+  ],
+  // Sequential burgundy scale (light → dark) — for ordinal data like ASA grades
+  ordinal: ['#E0A9B5', '#D4818C', '#C45872', '#A83248', '#800020', '#5C0017'],
+  // Gold scale — for ordinal warmth data
+  goldScale: ['#E4C98B', '#D4B896', '#C9A14A', '#A08755', '#8A6A2A', '#5D3A00'],
+  // Time scale — burgundy fading to gold across 12 months
+  timeScale: [
+    '#5C0017','#722F37','#800020','#A83248','#C45872','#D4818C',
+    '#B8794A','#A08755','#8A6A2A','#C9A14A','#D4B896','#E4C98B'
+  ],
+  // Two-tone pair: burgundy + gold
+  pair: ['#800020', '#C9A14A'],
+  // Three-tone triad
+  triad: ['#800020', '#C9A14A', '#722F37'],
+  // Severity scale: good → caution → warn → danger
+  severity: ['#5A8C44', '#C9A14A', '#E07B30', '#C0392B']
+};
+
+// Semantic colour maps for known categorical values
+const COLOR_MAP = {
+  urgency:        { 'Elective': '#8A6A2A', 'Emergency': '#C0392B',
+                    'Routine': '#5A8C44',  'Urgent': '#E07B30' },
+  complications:  { 'None': '#5A8C44', 'Minor': '#C9A14A', 'Major': '#C0392B' },
+  origin:         { 'Ward': '#8A6A2A',  'ICU':  '#C0392B' },
+  gaType:         { 'Volatile': '#A83248', 'TIVA': '#5D2538', 'Both': '#722F37' },
+  sedationDepth:  { 'Mild': '#D4B896', 'Moderate': '#C9A14A', 'Deep': '#8A6A2A' },
+  sex:            { 'Male': '#5D2538',  'Female': '#C45872', 'Other': '#8A5A6A' },
+  outcome:        { 'Completed': '#5A8C44', 'Stabilised': '#C9A14A', 'Escalated': '#C0392B' },
+  callType:       { 'Procedural': '#800020', 'Non-procedural': '#C9A14A' },
+  timeOfDay:      { 'Morning': '#E4C98B', 'Afternoon': '#C9A14A',
+                    'Evening': '#A83248', 'Night': '#5C0017' },
+  approach:       { 'Open': '#800020', 'Laparoscopic': '#C9A14A',
+                    'Endoscopic': '#8A6A2A', 'Robotic': '#722F37' },
+  asaGrade:       { 'I': '#E0A9B5', 'II': '#C45872', 'III': '#A83248',
+                    'IV': '#800020', 'V': '#5C0017', 'VI': '#3F0010',
+                    'I E': '#E0A9B5', 'II E': '#C45872', 'III E': '#A83248',
+                    'IV E': '#800020', 'V E': '#5C0017' },
+  comorbidityBurden: { 'None': '#5A8C44', 'Single (1)': '#C9A14A', 'Multiple ≥2': '#C0392B' }
+};
+
+// Get N colours from a named palette (rotates if N > palette length)
+function paletteN(n, name = 'spectrum') {
+  const p = PALETTE[name] || PALETTE.spectrum;
+  return Array.from({ length: n }, (_, i) => p[i % p.length]);
+}
+
+// Map labels → colours via a named semantic map; falls back to spectrum
+function colorsFor(labels, mapName) {
+  const map = COLOR_MAP[mapName];
+  return labels.map((l, i) => (map && map[l]) || PALETTE.spectrum[i % PALETTE.spectrum.length]);
+}
+
+// Build a vertical area gradient on a canvas, given a base hex colour
+function gradientFill(canvas, hex, topAlpha = 0.4) {
+  const ctx = canvas.getContext('2d');
+  const g = ctx.createLinearGradient(0, 0, 0, canvas.height || 280);
+  const r = parseInt(hex.slice(1,3), 16);
+  const gg = parseInt(hex.slice(3,5), 16);
+  const b = parseInt(hex.slice(5,7), 16);
+  g.addColorStop(0, `rgba(${r},${gg},${b},${topAlpha})`);
+  g.addColorStop(1, `rgba(${r},${gg},${b},0.02)`);
+  return g;
+}
+
 const CHART_DEFAULTS = {
   responsive: true,
   maintainAspectRatio: false,
@@ -6074,7 +6174,9 @@ function renderCh1() {
   charts.ch1 = new Chart(document.getElementById('ch1'), {
     type: 'bar',
     data: { labels: months.map(m => m.label),
-      datasets: [{ label: 'Cases', data: counts, backgroundColor: '#800020', borderRadius: 4 }] },
+      datasets: [{ label: 'Cases', data: counts,
+        backgroundColor: paletteN(12, 'timeScale'),
+        borderRadius: 6, borderSkipped: false }] },
     options: { ...CHART_DEFAULTS, plugins: { ...CHART_DEFAULTS.plugins, legend: { display: false } },
       scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }
   });
@@ -6084,8 +6186,10 @@ function renderCh2() {
   const labels = Object.keys(m);
   charts.ch2 = new Chart(document.getElementById('ch2'), {
     type: 'doughnut',
-    data: { labels, datasets: [{ data: labels.map(l => m[l]), backgroundColor: CHART_PALETTE }] },
-    options: { ...CHART_DEFAULTS }
+    data: { labels, datasets: [{ data: labels.map(l => m[l]),
+      backgroundColor: paletteN(labels.length, 'spectrum'),
+      borderColor: '#fff', borderWidth: 2 }] },
+    options: { ...CHART_DEFAULTS, cutout: '55%' }
   });
 }
 function renderCh3() {
@@ -6094,7 +6198,9 @@ function renderCh3() {
   charts.ch3 = new Chart(document.getElementById('ch3'), {
     type: 'bar',
     data: { labels: entries.map(e => e[0]),
-      datasets: [{ label: 'Cases', data: entries.map(e => e[1]), backgroundColor: '#800020', borderRadius: 3 }] },
+      datasets: [{ label: 'Cases', data: entries.map(e => e[1]),
+        backgroundColor: paletteN(entries.length, 'spectrum'),
+        borderRadius: 5, borderSkipped: false }] },
     options: { ...CHART_DEFAULTS, indexAxis: 'y',
       plugins: { ...CHART_DEFAULTS.plugins, legend: { display: false } },
       scales: { x: { beginAtZero: true, ticks: { precision: 0 } } } }
@@ -6107,8 +6213,10 @@ function renderCh4() {
   charts.ch4 = new Chart(document.getElementById('ch4'), {
     type: 'doughnut',
     data: { labels: labels.map(l => 'ASA ' + l),
-      datasets: [{ data: labels.map(l => m[l]), backgroundColor: CHART_PALETTE }] },
-    options: { ...CHART_DEFAULTS }
+      datasets: [{ data: labels.map(l => m[l]),
+        backgroundColor: colorsFor(labels, 'asaGrade'),
+        borderColor: '#fff', borderWidth: 2 }] },
+    options: { ...CHART_DEFAULTS, cutout: '55%' }
   });
 }
 function renderCh5() {
@@ -6117,7 +6225,9 @@ function renderCh5() {
   charts.ch5 = new Chart(document.getElementById('ch5'), {
     type: 'bar',
     data: { labels: entries.map(e => e[0]),
-      datasets: [{ label: 'Cases', data: entries.map(e => e[1]), backgroundColor: '#A83248', borderRadius: 3 }] },
+      datasets: [{ label: 'Cases', data: entries.map(e => e[1]),
+        backgroundColor: paletteN(entries.length, 'spectrum').reverse(),
+        borderRadius: 5, borderSkipped: false }] },
     options: { ...CHART_DEFAULTS, indexAxis: 'y',
       plugins: { ...CHART_DEFAULTS.plugins, legend: { display: false } },
       scales: { x: { beginAtZero: true, ticks: { precision: 0 } } } }
@@ -6138,8 +6248,10 @@ function renderCh6() {
     type: 'bar',
     data: { labels: entries.map(e => shortName(e[0])),
       datasets: [
-        { label: 'Cases', data: entries.map(e => e[1].cases), backgroundColor: '#800020', borderRadius: 3 },
-        { label: 'Hours', data: entries.map(e => +(e[1].minutes/60).toFixed(1)), backgroundColor: '#800020', borderRadius: 3 }
+        { label: 'Cases', data: entries.map(e => e[1].cases),
+          backgroundColor: '#800020', borderRadius: 4, borderSkipped: false },
+        { label: 'Hours', data: entries.map(e => +(e[1].minutes/60).toFixed(1)),
+          backgroundColor: '#C9A14A', borderRadius: 4, borderSkipped: false }
       ] },
     options: { ...CHART_DEFAULTS, scales: { y: { beginAtZero: true } } }
   });
@@ -6150,23 +6262,38 @@ function renderCh7() {
   charts.ch7 = new Chart(document.getElementById('ch7'), {
     type: 'doughnut',
     data: { labels, datasets: [{ data: labels.map(l => m[l]),
-      backgroundColor: labels.map(l => l === 'Emergency' ? '#F57C00' : '#8A6A2A') }] },
-    options: { ...CHART_DEFAULTS }
+      backgroundColor: colorsFor(labels, 'urgency'),
+      borderColor: '#fff', borderWidth: 2 }] },
+    options: { ...CHART_DEFAULTS, cutout: '55%' }
   });
 }
 function renderCh8() {
   const m = {};
+  const isNone = s => {
+    const t = String(s || '').trim().toLowerCase();
+    return t === '' || t === 'none' || t === 'nil' ||
+           t === 'no complications' || t === 'no complication';
+  };
   filteredCases.forEach(c => {
     (c.complications || []).forEach(k => {
+      if (isNone(k)) return;
       const key = String(k).startsWith('Other:') ? 'Other' : k;
       m[key] = (m[key] || 0) + 1;
     });
   });
   const entries = Object.entries(m).sort((a,b) => b[1] - a[1]);
-  charts.ch8 = new Chart(document.getElementById('ch8'), {
+  const canvas = document.getElementById('ch8');
+  if (entries.length === 0) {
+    drawEmptyChartMessage(canvas, 'No complications recorded ✓');
+    return;
+  }
+  // Severity scale — higher count = darker
+  charts.ch8 = new Chart(canvas, {
     type: 'bar',
     data: { labels: entries.map(e => e[0]),
-      datasets: [{ label: 'Count', data: entries.map(e => e[1]), backgroundColor: '#D32F2F', borderRadius: 3 }] },
+      datasets: [{ label: 'Count', data: entries.map(e => e[1]),
+        backgroundColor: paletteN(entries.length, 'severity').reverse(),
+        borderRadius: 5, borderSkipped: false }] },
     options: { ...CHART_DEFAULTS,
       plugins: { ...CHART_DEFAULTS.plugins, legend: { display: false } },
       scales: { y: { beginAtZero: true, ticks: { precision: 0 } }, x: { ticks: { font: { size: 10 } } } } }
@@ -6181,7 +6308,9 @@ function renderCh9() {
   charts.ch9 = new Chart(document.getElementById('ch9'), {
     type: 'bar',
     data: { labels: entries.map(e => e[0]),
-      datasets: [{ label: 'Count', data: entries.map(e => e[1]), backgroundColor: '#A83248', borderRadius: 3 }] },
+      datasets: [{ label: 'Count', data: entries.map(e => e[1]),
+        backgroundColor: paletteN(entries.length, 'spectrum'),
+        borderRadius: 5, borderSkipped: false }] },
     options: { ...CHART_DEFAULTS, indexAxis: 'y',
       plugins: { ...CHART_DEFAULTS.plugins, legend: { display: false } },
       scales: { x: { beginAtZero: true, ticks: { precision: 0 } } } }
@@ -6194,7 +6323,9 @@ function renderCh10() {
   charts.ch10 = new Chart(document.getElementById('ch10'), {
     type: 'bar',
     data: { labels: entries.map(e => e[0]),
-      datasets: [{ label: 'Count', data: entries.map(e => e[1]), backgroundColor: '#800020', borderRadius: 3 }] },
+      datasets: [{ label: 'Count', data: entries.map(e => e[1]),
+        backgroundColor: paletteN(entries.length, 'spectrum').reverse(),
+        borderRadius: 5, borderSkipped: false }] },
     options: { ...CHART_DEFAULTS, indexAxis: 'y',
       plugins: { ...CHART_DEFAULTS.plugins, legend: { display: false } },
       scales: { x: { beginAtZero: true, ticks: { precision: 0 } } } }
@@ -6207,7 +6338,9 @@ function renderCh11() {
   charts.ch11 = new Chart(document.getElementById('ch11'), {
     type: 'bar',
     data: { labels: entries.map(e => String(e[0]).replace(/\s*—.*/, '').replace(/\s*\(.*?\)/, '')),
-      datasets: [{ label: 'Count', data: entries.map(e => e[1]), backgroundColor: '#800020', borderRadius: 3 }] },
+      datasets: [{ label: 'Count', data: entries.map(e => e[1]),
+        backgroundColor: paletteN(entries.length, 'goldScale').reverse(),
+        borderRadius: 5, borderSkipped: false }] },
     options: { ...CHART_DEFAULTS,
       plugins: { ...CHART_DEFAULTS.plugins, legend: { display: false } },
       scales: { y: { beginAtZero: true, ticks: { precision: 0 } },
@@ -6219,12 +6352,16 @@ function renderCh12() {
   const counts = months.map(m =>
     filteredCases.filter(c => String(c.date || '').startsWith(m.key) && c.olv && c.olv.length > 0).length
   );
-  charts.ch12 = new Chart(document.getElementById('ch12'), {
+  const canvas = document.getElementById('ch12');
+  charts.ch12 = new Chart(canvas, {
     type: 'line',
     data: { labels: months.map(m => m.label),
-      datasets: [{ label: 'OLV cases', data: counts, borderColor: '#800020',
-        backgroundColor: 'rgba(128,0,32,0.15)', fill: true, tension: 0.3,
-        pointBackgroundColor: '#800020', pointRadius: 4, pointHoverRadius: 6 }] },
+      datasets: [{ label: 'OLV cases', data: counts,
+        borderColor: '#722F37', borderWidth: 3,
+        backgroundColor: gradientFill(canvas, '#722F37', 0.45),
+        fill: true, tension: 0.35,
+        pointBackgroundColor: '#722F37', pointBorderColor: '#fff', pointBorderWidth: 2,
+        pointRadius: 5, pointHoverRadius: 7 }] },
     options: { ...CHART_DEFAULTS,
       plugins: { ...CHART_DEFAULTS.plugins, legend: { display: false } },
       scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }
@@ -6249,7 +6386,9 @@ function renderCh13() {
   charts.ch13 = new Chart(canvas, {
     type: 'bar',
     data: { labels: entries.map(e => e[0]),
-      datasets: [{ label: 'Uses', data: entries.map(e => e[1]), backgroundColor: '#A83248', borderRadius: 3 }] },
+      datasets: [{ label: 'Uses', data: entries.map(e => e[1]),
+        backgroundColor: paletteN(entries.length, 'spectrum'),
+        borderRadius: 5, borderSkipped: false }] },
     options: { ...CHART_DEFAULTS, indexAxis: 'y',
       plugins: { ...CHART_DEFAULTS.plugins, legend: { display: false } },
       scales: { x: { beginAtZero: true, ticks: { precision: 0 } } } }
@@ -6277,13 +6416,14 @@ function renderCh14() {
   const labels = [];
   const data = [];
   const colors = [];
-  if (single) { labels.push('Single-shot'); data.push(single); colors.push('#800020'); }
-  if (cont) { labels.push('Continuous (catheter)'); data.push(cont); colors.push('#800020'); }
-  if (unknown) { labels.push('Unspecified'); data.push(unknown); colors.push('#8695A8'); }
+  if (single) { labels.push('Single-shot'); data.push(single); colors.push('#A83248'); }
+  if (cont) { labels.push('Continuous (catheter)'); data.push(cont); colors.push('#722F37'); }
+  if (unknown) { labels.push('Unspecified'); data.push(unknown); colors.push('#D4B896'); }
   charts.ch14 = new Chart(canvas, {
     type: 'doughnut',
-    data: { labels, datasets: [{ data, backgroundColor: colors }] },
-    options: { ...CHART_DEFAULTS }
+    data: { labels, datasets: [{ data, backgroundColor: colors,
+      borderColor: '#fff', borderWidth: 2 }] },
+    options: { ...CHART_DEFAULTS, cutout: '55%' }
   });
 }
 
@@ -6304,17 +6444,18 @@ function renderCh15() {
     return;
   }
   const colorMap = {
-    'Volatile': '#800020',
-    'TIVA': '#800020',
-    'Volatile + TIVA': '#A83248',
-    'Unspecified': '#8695A8'
+    'Volatile': '#A83248',
+    'TIVA': '#5D2538',
+    'Volatile + TIVA': '#722F37',
+    'Unspecified': '#D4B896'
   };
   charts.ch15 = new Chart(canvas, {
     type: 'doughnut',
     data: { labels: entries.map(e => e[0]),
       datasets: [{ data: entries.map(e => e[1]),
-        backgroundColor: entries.map(e => colorMap[e[0]] || '#5C6B80') }] },
-    options: { ...CHART_DEFAULTS }
+        backgroundColor: entries.map(e => colorMap[e[0]] || '#8A5A6A'),
+        borderColor: '#fff', borderWidth: 2 }] },
+    options: { ...CHART_DEFAULTS, cutout: '55%' }
   });
 }
 
@@ -6328,18 +6469,13 @@ function renderCh16() {
   if (!canvas) return;
   const entries = Object.entries(m);
   if (entries.length === 0) { drawEmptyChartMessage(canvas, 'No surgical approach data yet'); return; }
-  const colorMap = {
-    'Open': '#800020',
-    'Laparoscopic': '#800020',
-    'Robotic': '#A83248',
-    'Endoscopic': '#8A6A2A'
-  };
   charts.ch16 = new Chart(canvas, {
     type: 'doughnut',
     data: { labels: entries.map(e => e[0]),
       datasets: [{ data: entries.map(e => e[1]),
-        backgroundColor: entries.map(e => colorMap[e[0]] || '#5C6B80') }] },
-    options: { ...CHART_DEFAULTS }
+        backgroundColor: colorsFor(entries.map(e => e[0]), 'approach'),
+        borderColor: '#fff', borderWidth: 2 }] },
+    options: { ...CHART_DEFAULTS, cutout: '55%' }
   });
 }
 
@@ -6356,7 +6492,9 @@ function renderCh17() {
   charts.ch17 = new Chart(canvas, {
     type: 'bar',
     data: { labels: entries.map(e => e[0]),
-      datasets: [{ label: 'Count', data: entries.map(e => e[1]), backgroundColor: '#F57C00', borderRadius: 3 }] },
+      datasets: [{ label: 'Count', data: entries.map(e => e[1]),
+        backgroundColor: paletteN(entries.length, 'goldScale').reverse(),
+        borderRadius: 5, borderSkipped: false }] },
     options: { ...CHART_DEFAULTS, indexAxis: 'y',
       plugins: { ...CHART_DEFAULTS.plugins, legend: { display: false } },
       scales: { x: { beginAtZero: true, ticks: { precision: 0 } } } }
@@ -6377,15 +6515,16 @@ function renderCh18() {
   const entries = Object.entries(m);
   if (entries.length === 0) { drawEmptyChartMessage(canvas, 'No spinal needle data yet'); return; }
   const colorMap = {
-    'Whitacre (pencil point)': '#800020',
-    'Quincke (cutting)': '#800020'
+    'Whitacre (pencil point)': '#A83248',
+    'Quincke (cutting)': '#8A6A2A'
   };
   charts.ch18 = new Chart(canvas, {
     type: 'doughnut',
     data: { labels: entries.map(e => e[0]),
       datasets: [{ data: entries.map(e => e[1]),
-        backgroundColor: entries.map(e => colorMap[e[0]] || '#5C6B80') }] },
-    options: { ...CHART_DEFAULTS }
+        backgroundColor: entries.map(e => colorMap[e[0]] || '#C45872'),
+        borderColor: '#fff', borderWidth: 2 }] },
+    options: { ...CHART_DEFAULTS, cutout: '55%' }
   });
 }
 
@@ -6400,9 +6539,12 @@ function renderCh19() {
   charts.ch19 = new Chart(canvas, {
     type: 'line',
     data: { labels: months.map(m => m.label),
-      datasets: [{ label: 'Cases with catheter', data: counts, borderColor: '#F57C00',
-        backgroundColor: 'rgba(245,124,0,0.15)', fill: true, tension: 0.3,
-        pointBackgroundColor: '#F57C00', pointRadius: 4, pointHoverRadius: 6 }] },
+      datasets: [{ label: 'Cases with catheter', data: counts,
+        borderColor: '#C9A14A', borderWidth: 3,
+        backgroundColor: gradientFill(canvas, '#C9A14A', 0.45),
+        fill: true, tension: 0.35,
+        pointBackgroundColor: '#C9A14A', pointBorderColor: '#fff', pointBorderWidth: 2,
+        pointRadius: 5, pointHoverRadius: 7 }] },
     options: { ...CHART_DEFAULTS,
       plugins: { ...CHART_DEFAULTS.plugins, legend: { display: false } },
       scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }
@@ -6423,8 +6565,9 @@ function renderCh20() {
     type: 'doughnut',
     data: { labels: entries.map(e => e[0]),
       datasets: [{ data: entries.map(e => e[1]),
-        backgroundColor: entries.map(e => e[0] === 'ICU' ? '#D32F2F' : '#8A6A2A') }] },
-    options: { ...CHART_DEFAULTS }
+        backgroundColor: colorsFor(entries.map(e => e[0]), 'origin'),
+        borderColor: '#fff', borderWidth: 2 }] },
+    options: { ...CHART_DEFAULTS, cutout: '55%' }
   });
 }
 
@@ -6451,13 +6594,14 @@ function renderCh21() {
       ],
       datasets: [{
         data: [none, single, multi],
-        backgroundColor: ['#C9A14A','#F57C00','#D32F2F'],
+        backgroundColor: ['#5A8C44','#C9A14A','#C0392B'],
         borderWidth: 2,
         borderColor: '#FFFFFF'
       }]
     },
     options: {
       ...CHART_DEFAULTS,
+      cutout: '55%',
       plugins: {
         ...CHART_DEFAULTS.plugins,
         tooltip: {
@@ -6496,8 +6640,9 @@ function renderCh22() {
       datasets: [{
         label: 'Patients',
         data: entries.map(e => e[1]),
-        backgroundColor: '#800020',
-        borderRadius: 3
+        backgroundColor: paletteN(entries.length, 'spectrum'),
+        borderRadius: 5,
+        borderSkipped: false
       }]
     },
     options: {
