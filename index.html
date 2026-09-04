@@ -2143,53 +2143,62 @@ table.data-table {
 }
 
 /* Stat card colour variations — applied to specific cards */
-#view-dashboard .stat-card:nth-of-type(1),
-#view-oncalldash .stat-card:nth-of-type(1) {
+#view-dashboard .stat-card:nth-of-type(6n+1),
+#view-oncalldash .stat-card:nth-of-type(6n+1) {
   background: linear-gradient(135deg, #800020 0%, #5C0017 100%);
   color: white;
 }
-#view-dashboard .stat-card:nth-of-type(1)::before,
-#view-oncalldash .stat-card:nth-of-type(1)::before { background: #4FC3F7 !important; }
+#view-dashboard .stat-card:nth-of-type(6n+1)::before,
+#view-oncalldash .stat-card:nth-of-type(6n+1)::before { background: #4FC3F7 !important; }
 
-#view-dashboard .stat-card:nth-of-type(2),
-#view-oncalldash .stat-card:nth-of-type(2) {
+#view-dashboard .stat-card:nth-of-type(6n+2),
+#view-oncalldash .stat-card:nth-of-type(6n+2) {
   background: linear-gradient(135deg, #800020 0%, #5C0017 100%);
   color: white;
 }
-#view-dashboard .stat-card:nth-of-type(2)::before,
-#view-oncalldash .stat-card:nth-of-type(2)::before { background: #80CBC4 !important; }
+#view-dashboard .stat-card:nth-of-type(6n+2)::before,
+#view-oncalldash .stat-card:nth-of-type(6n+2)::before { background: #80CBC4 !important; }
 
-#view-dashboard .stat-card:nth-of-type(3),
-#view-oncalldash .stat-card:nth-of-type(3) {
+#view-dashboard .stat-card:nth-of-type(6n+3),
+#view-oncalldash .stat-card:nth-of-type(6n+3) {
   background: linear-gradient(135deg, #C9A14A 0%, #8A6A2A 100%);
   color: white;
 }
-#view-dashboard .stat-card:nth-of-type(3)::before,
-#view-oncalldash .stat-card:nth-of-type(3)::before { background: #64B5F6 !important; }
+#view-dashboard .stat-card:nth-of-type(6n+3)::before,
+#view-oncalldash .stat-card:nth-of-type(6n+3)::before { background: #64B5F6 !important; }
 
-#view-dashboard .stat-card:nth-of-type(4),
-#view-oncalldash .stat-card:nth-of-type(4) {
+#view-dashboard .stat-card:nth-of-type(6n+4),
+#view-oncalldash .stat-card:nth-of-type(6n+4) {
   background: linear-gradient(135deg, #F57C00 0%, #E65100 100%);
   color: white;
 }
-#view-dashboard .stat-card:nth-of-type(4)::before,
-#view-oncalldash .stat-card:nth-of-type(4)::before { background: #FFB74D !important; }
+#view-dashboard .stat-card:nth-of-type(6n+4)::before,
+#view-oncalldash .stat-card:nth-of-type(6n+4)::before { background: #FFB74D !important; }
 
-#view-dashboard .stat-card:nth-of-type(5),
-#view-oncalldash .stat-card:nth-of-type(5) {
+#view-dashboard .stat-card:nth-of-type(6n+5),
+#view-oncalldash .stat-card:nth-of-type(6n+5) {
   background: linear-gradient(135deg, #7B1FA2 0%, #4A148C 100%);
   color: white;
 }
-#view-dashboard .stat-card:nth-of-type(5)::before,
-#view-oncalldash .stat-card:nth-of-type(5)::before { background: #BA68C8 !important; }
+#view-dashboard .stat-card:nth-of-type(6n+5)::before,
+#view-oncalldash .stat-card:nth-of-type(6n+5)::before { background: #BA68C8 !important; }
 
-#view-dashboard .stat-card:nth-of-type(6),
-#view-oncalldash .stat-card:nth-of-type(6) {
+#view-dashboard .stat-card:nth-of-type(6n+6),
+#view-oncalldash .stat-card:nth-of-type(6n+6) {
   background: linear-gradient(135deg, #43A047 0%, #2E7D32 100%);
   color: white;
 }
-#view-dashboard .stat-card:nth-of-type(6)::before,
-#view-oncalldash .stat-card:nth-of-type(6)::before { background: #81C784 !important; }
+#view-dashboard .stat-card:nth-of-type(6n+6)::before,
+#view-oncalldash .stat-card:nth-of-type(6n+6)::before { background: #81C784 !important; }
+
+/* v4.4 safety net: a stat card that matches no colour rule must never end up
+   with white text on a white background. The cycle above covers any count,
+   but this guarantees legibility if the grid is ever restructured again. */
+#view-dashboard .stat-card,
+#view-oncalldash .stat-card {
+  background: linear-gradient(135deg, #800020 0%, #5C0017 100%);
+  color: #fff;
+}
 
 /* Override .red class to keep red even with above gradient */
 #view-dashboard .stat-card.red,
