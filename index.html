@@ -1686,6 +1686,27 @@ table.data-table {
   color: white;
 }
 
+#view-entry .accordion[data-section="qi"] .accordion-head {
+  background: linear-gradient(135deg, #FFF8E1 0%, #FFECB3 100%);
+  border-left: 5px solid #C9A14A;
+}
+#view-entry .accordion[data-section="qi"].open .accordion-head {
+  background: linear-gradient(135deg, #C9A14A 0%, #8A6A2A 100%);
+  color: white;
+}
+#view-entry .accordion[data-section="qi"] .accordion-num {
+  background: #C9A14A;
+  color: white;
+}
+#view-entry .accordion[data-section="qi"] .accordion-body {
+  border-left-color: #C9A14A;
+}
+/* v4.4: QI tick boxes read as neutral markers, not errors */
+#grp-qi .chk:hover { border-color: #C9A14A; background: #FFF8E1; }
+#grp-qi .chk input:checked ~ .box { background: #C9A14A; border-color: #C9A14A; }
+#noQiBtn { background: var(--success-bg); color: var(--success); border-color: #A5D6A7; }
+#noQiBtn.on { background: var(--success); color: #fff; border-color: var(--success); }
+
 #view-entry .accordion[data-section="notes"] .accordion-head {
   background: linear-gradient(135deg, #FFE0B2 0%, #FFCC80 100%);
   border-left: 5px solid #F57C00;
@@ -2321,7 +2342,7 @@ table.data-table {
     <div class="login-logo">⚕</div>
     <div class="login-hospital">KIMS Hospital · Electronic City</div>
     <h1>Anaesthesia Department</h1>
-    <p class="sub">Case Registry &amp; Statistics</p>
+    <p class="sub">Case Registry &amp; Statistics <span style="opacity:0.6;">· v4.4</span></p>
     <label for="doctorSelect">Select your name</label>
     <select id="doctorSelect">
       <option value="">-- Choose doctor --</option>
@@ -2342,7 +2363,7 @@ table.data-table {
         <span class="nav-brand-icon">⚕</span>
         <div class="nav-brand-text">
           <span class="nav-brand-hospital">KIMS Ecity</span>
-          <span class="nav-brand-name">Anaesthesia Registry</span>
+          <span class="nav-brand-name">Anaesthesia Registry <span style="opacity:0.55;font-weight:400;">v4.4</span></span>
         </div>
       </div>
       <button class="nav-btn" data-view="entry">✎ <span class="lbl-long">OT Case</span></button>
@@ -2462,6 +2483,7 @@ table.data-table {
                   <option>OT 1</option><option>OT 2</option><option>OT 3</option>
                   <option>OT 4</option><option>OT 5</option><option>OT 6</option>
                   <option>OT 7</option><option>OT 8</option>
+                  <option>IVF OT</option>
                 </optgroup>
                 <optgroup label="Obstetrics">
                   <option>OB 1</option><option>OB 2</option>
@@ -2507,12 +2529,26 @@ table.data-table {
               </select>
             </div>
 
-            <!-- v5: Third Anaesthetist (Ecity) -->
+            <!-- v4.4: Case category — organ donation / transplant sits alongside surgical specialty -->
             <div class="field">
-              <label class="field-label">Third Anaesthetist <span class="opt">(optional)</span></label>
-              <select class="input" id="f_third_anaesth">
-                <option value="">— None —</option>
-              </select>
+              <label class="field-label">Case category <span class="opt">(optional)</span></label>
+              <div class="pill-grid" data-group="caseCategory">
+                <button type="button" class="pill small on" data-val="Standard">Standard</button>
+                <button type="button" class="pill small" data-val="Organ retrieval (donor)">Organ retrieval (donor)</button>
+                <button type="button" class="pill small" data-val="Transplant (recipient)">Transplant (recipient)</button>
+              </div>
+              <div class="hidden" id="donorTypeField" style="margin-top:10px;">
+                <label class="field-label" style="font-size:12px;">Donor type</label>
+                <div class="pill-grid" data-group="donorType">
+                  <button type="button" class="pill small" data-val="DBD (brain death)">DBD (brain death)</button>
+                  <button type="button" class="pill small" data-val="DCD (circulatory death)">DCD (circulatory death)</button>
+                  <button type="button" class="pill small" data-val="Living donor">Living donor</button>
+                </div>
+              </div>
+              <div class="hidden" id="organsField" style="margin-top:10px;">
+                <label class="field-label" style="font-size:12px;">Organ(s)</label>
+                <div class="chk-grid" id="grp-organs" style="grid-template-columns:1fr 1fr 1fr;"></div>
+              </div>
             </div>
 
             <div class="field">
@@ -2691,7 +2727,26 @@ table.data-table {
             <div class="row-2">
               <div class="field">
                 <label class="field-label">Patient Age <span class="opt">(optional)</span></label>
-                <input type="number" class="input" id="f_age" min="0" max="120" placeholder="years" />
+                <div style="display:flex;gap:8px;align-items:center;">
+                  <input type="number" class="input" id="f_age" min="0" max="1200" placeholder="age" style="max-width:110px;" />
+                  <div class="pill-grid" data-group="ageUnit" style="gap:5px;">
+                    <button type="button" class="pill small" data-val="Days">D</button>
+                    <button type="button" class="pill small" data-val="Weeks">W</button>
+                    <button type="button" class="pill small" data-val="Months">M</button>
+                    <button type="button" class="pill small on" data-val="Years">Y</button>
+                  </div>
+                </div>
+                <div id="ageBandHint" style="font-size:11px;color:var(--teal-dark);font-weight:600;margin-top:6px;min-height:14px;"></div>
+                <div class="hidden" id="prematureField" style="margin-top:8px;padding:10px;background:#FBF3F5;border:1.5px solid var(--teal-light);border-radius:var(--radius-sm);">
+                  <label class="chk" style="border:none;background:transparent;padding:0;">
+                    <input type="checkbox" id="f_ex_premature"><span class="box"></span>
+                    <span class="lbl">Ex-premature (born &lt; 37 weeks)</span>
+                  </label>
+                  <div class="hidden" id="pcaField" style="margin-top:8px;">
+                    <label class="field-label" style="font-size:12px;">Post-conceptual age (weeks) <span class="opt">— apnoea risk if &lt; 60</span></label>
+                    <input type="number" class="input" id="f_pca_weeks" min="20" max="80" placeholder="e.g. 44" style="padding:8px;max-width:140px;">
+                  </div>
+                </div>
               </div>
               <div class="field">
                 <label class="field-label">Sex <span class="opt">(optional)</span></label>
@@ -2805,7 +2860,49 @@ table.data-table {
           </button>
           <div class="accordion-body">
             <button type="button" class="none-btn on" id="noCompBtn">✓ No complications</button>
-            <div class="chk-grid" id="grp-complications"></div>
+
+            <div class="chk-group">
+              <div class="chk-group-title">Anaesthesia-related</div>
+              <div class="chk-grid" id="grp-complications"></div>
+            </div>
+
+            <div class="chk-group">
+              <div class="chk-group-title">Surgical</div>
+              <div class="chk-grid" id="grp-complications-surg"></div>
+
+              <div class="hidden" id="transfusionField" style="margin-top:12px;padding:12px;background:#FBF3F5;border:1.5px solid var(--teal-light);border-radius:var(--radius-sm);">
+                <div style="font-size:12px;font-weight:600;color:var(--teal-dark);margin-bottom:8px;">Blood / blood products given</div>
+                <div class="chk-grid" id="grp-transfusion" style="grid-template-columns:1fr 1fr;"></div>
+                <div style="margin-top:10px;">
+                  <label class="field-label" style="font-size:12px;">Total units transfused</label>
+                  <input type="number" class="input" id="f_transfusion_units" min="0" max="50" placeholder="e.g. 2" style="padding:8px;max-width:140px;">
+                </div>
+              </div>
+
+              <div class="hidden" id="clavienField" style="margin-top:12px;">
+                <label class="field-label" style="font-size:12px;">Clavien–Dindo grade <span class="opt">(surgical outcome severity)</span></label>
+                <div class="pill-grid" data-group="clavien">
+                  <button type="button" class="pill small" data-val="I">I</button>
+                  <button type="button" class="pill small" data-val="II">II</button>
+                  <button type="button" class="pill small" data-val="IIIa">IIIa</button>
+                  <button type="button" class="pill small" data-val="IIIb">IIIb</button>
+                  <button type="button" class="pill small" data-val="IVa">IVa</button>
+                  <button type="button" class="pill small" data-val="IVb">IVb</button>
+                  <button type="button" class="pill small" data-val="V">V</button>
+                </div>
+                <div style="font-size:11px;color:var(--text-soft);margin-top:6px;">I deviation only · II drugs/transfusion · III intervention · IV organ failure · V death</div>
+              </div>
+            </div>
+
+            <div class="hidden" id="severityField">
+              <label class="field-label">Overall severity <span class="opt">(anaesthesia perspective)</span></label>
+              <div class="pill-grid" data-group="compSeverity">
+                <button type="button" class="pill small" data-val="Minor">Minor</button>
+                <button type="button" class="pill small" data-val="Major">Major</button>
+                <button type="button" class="pill small" data-val="Sentinel">Sentinel</button>
+              </div>
+            </div>
+
             <div class="field" style="margin-top:12px;">
               <label class="field-label">Other complication <span class="opt">(specify)</span></label>
               <input type="text" class="input" id="f_comp_other" placeholder="Describe..." maxlength="200" />
@@ -2813,10 +2910,32 @@ table.data-table {
           </div>
         </div>
 
+        <div class="accordion" data-section="qi">
+          <button type="button" class="accordion-head">
+            <span class="accordion-title">
+              <span class="accordion-num optional">E</span> <span class="ot-section-icon">🎯</span>Quality Indicators
+              <span class="accordion-optional">OPTIONAL</span>
+            </span>
+            <span class="chevron">▶</span>
+          </button>
+          <div class="accordion-body">
+            <button type="button" class="none-btn on" id="noQiBtn">✓ Nothing to flag</button>
+            <div style="font-size:12px;color:var(--text-muted);margin-bottom:12px;line-height:1.5;">
+              These are departmental quality markers, not judgements. Honest logging is what makes the monthly
+              review meaningful — a flagged case is a learning case, not a bad one.
+            </div>
+            <div class="chk-grid" id="grp-qi"></div>
+            <div class="field" style="margin-top:14px;">
+              <label class="field-label">Reflective note <span class="opt">(private to you — what would you do differently?)</span></label>
+              <textarea class="textarea" id="f_qi_reflection" maxlength="400" placeholder="Optional. Only you see this in My Cases." style="min-height:70px;"></textarea>
+            </div>
+          </div>
+        </div>
+
         <div class="accordion" data-section="notes">
           <button type="button" class="accordion-head">
             <span class="accordion-title">
-              <span class="accordion-num optional">E</span> <span class="oc-section-icon">📝</span>Post-op &amp; Notes
+              <span class="accordion-num optional">F</span> <span class="oc-section-icon">📝</span>Post-op &amp; Notes
               <span class="accordion-optional">OPTIONAL</span>
             </span>
             <span class="chevron">▶</span>
@@ -3233,6 +3352,24 @@ table.data-table {
         <button type="button" class="btn btn-ghost btn-sm" id="myExportLogbookBtn" style="margin-left:auto;">↓ Export Logbook CSV</button>
       </div>
 
+      <!-- v4.4: private reflective practice summary -->
+      <div class="table-card" id="myQiCard" style="margin-bottom:14px;">
+        <div class="table-head">
+          <h3>🎯 My Quality Indicators</h3>
+          <div style="font-size:12px;color:var(--text-muted);">Visible only to you</div>
+        </div>
+        <div style="padding:14px 16px;font-size:13px;color:var(--text-muted);line-height:1.5;" id="myQiSummary"></div>
+        <div class="table-wrap">
+          <table class="data-table" id="myQiTable">
+            <thead>
+              <tr><th>Indicator</th><th>Your cases</th><th>Your rate</th><th>Dept median</th></tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div id="myReflections" style="padding:14px 16px;"></div>
+      </div>
+
       <div id="myCasesList"></div>
     </div>
 
@@ -3352,6 +3489,19 @@ table.data-table {
         <div class="stat-label">Multi-Morbidity (≥2)</div>
         <div class="stat-value" id="stat_multimorbid">0<span class="stat-suffix">%</span></div>
       </div>
+      <!-- v4.4: QI stats -->
+      <div class="stat-card red">
+        <div class="stat-label">QI Flag Rate</div>
+        <div class="stat-value" id="stat_qirate">0<span class="stat-suffix">%</span></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Paediatric (&lt; 12y)</div>
+        <div class="stat-value" id="stat_paeds">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Transfused Cases</div>
+        <div class="stat-value" id="stat_transfused">0</div>
+      </div>
     </div>
 
     <div class="chart-grid">
@@ -3378,6 +3528,41 @@ table.data-table {
       <!-- v4.3: comorbidity analytics -->
       <div class="chart-card"><h3>㉑ Comorbidity Burden (None / Single / Multiple)</h3><div class="chart-wrap"><canvas id="ch21"></canvas></div></div>
       <div class="chart-card"><h3>㉒ Top Comorbidities</h3><div class="chart-wrap"><canvas id="ch22"></canvas></div></div>
+      <!-- v4.4 -->
+      <div class="chart-card"><h3>㉓ Age Band Distribution</h3><div class="chart-wrap"><canvas id="ch23"></canvas></div></div>
+      <div class="chart-card"><h3>㉔ Case Category (Standard / Donor / Transplant)</h3><div class="chart-wrap"><canvas id="ch24"></canvas></div></div>
+      <div class="chart-card"><h3>㉕ Clavien–Dindo Grade (surgical)</h3><div class="chart-wrap"><canvas id="ch25"></canvas></div></div>
+      <div class="chart-card"><h3>㉖ Blood Products Used</h3><div class="chart-wrap"><canvas id="ch26"></canvas></div></div>
+    </div>
+
+    <!-- ============ v4.4: QUALITY INDICATOR PANEL ============ -->
+    <div class="table-card" style="margin-bottom:20px;">
+      <div class="table-head">
+        <h3>🎯 Quality Indicators</h3>
+        <div style="font-size:12px;color:var(--text-muted);" id="qiDenominator"></div>
+      </div>
+      <div style="padding:14px 16px;font-size:13px;color:var(--text-muted);line-height:1.5;">
+        Departmental quality markers with denominators. These describe the system, not individuals —
+        a rising rate is a prompt to look at process, rostering or equipment before anything else.
+      </div>
+      <div class="chart-grid" style="padding:0 16px 16px;margin-bottom:0;">
+        <div class="chart-card"><h3>QI Flags per Month</h3><div class="chart-wrap"><canvas id="chQi1"></canvas></div></div>
+        <div class="chart-card"><h3>Indicator Frequency</h3><div class="chart-wrap"><canvas id="chQi2"></canvas></div></div>
+        <div class="chart-card"><h3>Complication Severity Mix</h3><div class="chart-wrap"><canvas id="chQi3"></canvas></div></div>
+      </div>
+      <div class="table-wrap">
+        <table class="data-table" id="qiTable">
+          <thead>
+            <tr>
+              <th>Indicator</th>
+              <th>Cases</th>
+              <th>Rate</th>
+              <th>Last 30 days</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
     </div>
 
     <!-- v4: Second & Third Anaesthetist panel (Ecity v5) -->
@@ -3474,16 +3659,35 @@ const PRIVILEGED_ROLES = ['HOD', 'Lead'];
 
 const AIRWAY = ['Video Laryngoscopy','McCoy Laryngoscope blade','Fibreoptic Bronchoscope (awake)','Fibreoptic Bronchoscope (asleep)','Difficult Airway (unanticipated)','Surgical Airway','Rapid Sequence Induction (RSI)'];
 const OLV = ['Double-Lumen ETT (left)','Double-Lumen ETT (right)','Bronchial Blocker','One-lung ventilation (other)'];
-const BLOCKS_UL = ['Interscalene','Supraclavicular','Costoclavicular','Infraclavicular','Axillary','Peripheral nerve block (forearm/hand)'];
-const BLOCKS_LL = ['Femoral/Adductor canal','Sciatic/Popliteal','Fascia Iliaca','PENG','Lumbar plexus','Sacral plexus','iPACK','Ankle block'];
-const BLOCKS_TRUNK = ['TAP block','ESPB','PECS I/II','Pecto-intercostal','External oblique intercostal','Paravertebral','Quadratus Lumborum (QL)','Rectus Sheath'];
-const BLOCKS_HN = ['Scalp block','Cervical plexus'];
+const BLOCKS_UL = ['Interscalene','Supraclavicular','Costoclavicular','Infraclavicular','Axillary','Peripheral nerve block (forearm/hand)','Suprascapular','Axillary nerve (circumflex)','Elbow block (median/radial/ulnar)','Wrist block','Digital block','Intercostobrachial','WALANT infiltration'];
+const BLOCKS_LL = ['Femoral/Adductor canal','Sciatic/Popliteal','Fascia Iliaca','Supra-inguinal Fascia Iliaca','PENG','Lumbar plexus','Sacral plexus','iPACK','Ankle block','Obturator','Genicular nerve block','Saphenous','Sub-gluteal sciatic','Psoas compartment','Tibial nerve','Sural nerve'];
+const BLOCKS_TRUNK = ['TAP block','ESPB','PECS I/II','Pecto-intercostal','External oblique intercostal','Paravertebral','Quadratus Lumborum (QL)','Rectus Sheath','Serratus Anterior Plane (SAP)','Intercostal','Ilioinguinal / Iliohypogastric','Retrolaminar','Transversalis fascia','Sacral ESP','TLIP (thoracolumbar interfascial)','Pudendal','Parasternal'];
+const BLOCKS_HN = ['Scalp block','Cervical plexus','Superficial cervical plexus','Deep cervical plexus','Maxillary / Infraorbital','Mandibular / Inferior alveolar','Greater occipital','Sphenopalatine','Superior laryngeal / Transtracheal (awake airway)','Peribulbar','Retrobulbar','Sub-Tenon'];
 const BLOCKS_EYE = []; // v3: Ophthalmic blocks removed
-const BLOCKS_OTHER = ['BIER block','Wound infiltration (surgeon)'];
+const BLOCKS_OTHER = ['BIER block','Wound infiltration (surgeon)','Wound catheter (continuous infiltration)','Caudal block','Penile block','Intra-articular','Stellate ganglion','Coeliac plexus','Lumbar sympathetic','Trigger point / myofascial'];
 const LINES = ['Arterial line — Radial','Arterial line — Femoral/other','CVC — Internal Jugular','CVC — Subclavian','CVC — Femoral','PICC','Introducer/Cordis sheath','Pulmonary Artery Catheter (PAC/Swan-Ganz)','Pacing wire','Intraosseous (IO) access'];
 const MONITORING = ['Intraoperative TOE/TEE','BIS','Entropy','EEG monitoring','SSEP/MEP neuromonitoring','NIRS / Cerebral oximetry','Continuous Cardiac Output (PiCCO/LiDCO/FloTrac)','Train-of-Four (TOF)'];
 const OTHER_SPECIAL = ['Cell salvage (intraop)','Deliberate hypotension','Awake craniotomy','Total IV Anaesthesia (TIVA)','High-frequency jet ventilation','Prone positioning (planned)'];
-const COMPLICATIONS = ['Hypotension','Hypertension','Bradycardia','Arrhythmia','Desaturation','Bronchospasm','Laryngospasm','Unanticipated difficult intubation','Failed intubation','Failed spinal','Failed epidural','Accidental dural puncture','High/total spinal','Failed block','Change of anaesthesia plan','LAST (local anaesthetic toxicity)','Severe PONV','Awareness under GA','Anaphylaxis','Haemorrhage/coagulopathy','Cardiac arrest','Death on table','Line complication (pneumothorax/haematoma/arterial puncture)','Nerve injury (suspected)'];
+// v4.4 — anaesthesia-related complications.
+// Four former entries (Failed spinal / Failed epidural / Failed block /
+// Change of anaesthesia plan) were promoted to the Quality Indicators
+// section, where they carry denominators and drive the QI dashboard.
+const COMPLICATIONS = ['Hypotension','Hypertension','Bradycardia','Arrhythmia','Desaturation','Bronchospasm','Laryngospasm','Unanticipated difficult intubation','Failed intubation','Accidental dural puncture','High/total spinal','LAST (local anaesthetic toxicity)','Severe PONV','Awareness under GA','Anaphylaxis','Aspiration','Malignant hyperthermia','Cardiac arrest','Death on table','Line complication (pneumothorax/haematoma/arterial puncture)','Nerve injury (suspected)','Pressure/positioning injury'];
+
+// v4.4 — surgical axis, logged separately so the two are never conflated.
+const COMPLICATIONS_SURGICAL = ['Significant intraoperative bleeding','Required blood / blood products','Coagulopathy','Vascular injury','Visceral / organ injury','Surgical re-exploration (same sitting)','Conversion to open procedure','Unplanned change of surgical procedure','Prolonged surgery well beyond plan'];
+
+// Triggers the transfusion sub-panel when either is ticked.
+const TRANSFUSION_TRIGGERS = ['Required blood / blood products','Significant intraoperative bleeding'];
+
+const TRANSFUSION_PRODUCTS = ['Packed red cells','Fresh frozen plasma','Platelets','Cryoprecipitate','Cell salvage return','Factor concentrate / fibrinogen'];
+
+// v4.4 — departmental quality indicators. Deliberately phrased as neutral
+// process/outcome markers rather than errors.
+const QI_INDICATORS = ['Change of anaesthesia plan','Unanticipated ICU admission','Failed spinal (repeated or converted)','Failed epidural','Failed peripheral nerve block','Unplanned reintubation','Drug error or near-miss','Awareness or delayed emergence','Dental or airway injury','PONV requiring treatment','Unplanned hypothermia (< 36°C in PACU)','Unplanned overnight admission (day case)','Case cancelled after entering theatre','Return to theatre within 24 hours'];
+
+// v4.4 — organs, shown only for retrieval / transplant cases.
+const ORGANS = ['Kidney','Liver','Heart','Lung','Pancreas','Small bowel','Cornea','Tissue / other'];
 
 // NEW v2 — block detail pick lists
 const LA_DRUGS = ['Ropivacaine','Bupivacaine (plain)','Bupivacaine (heavy)'];
@@ -3508,7 +3712,12 @@ const COMORBIDITIES = [
   'Hypertension','Diabetes Mellitus','Ischaemic Heart Disease','Heart Failure / Valvular HD',
   'COPD / Asthma','Chronic Kidney Disease','Liver Disease','Stroke / TIA',
   'Obesity (BMI ≥ 30)','Obstructive Sleep Apnoea','Anaemia / Coagulopathy','Thyroid Disorder',
-  'Pregnancy','Smoker','Cancer (active)','Neuromuscular / Spine Disease','Psychiatric / Cognitive'
+  'Pregnancy','Smoker','Cancer (active)','Neuromuscular / Spine Disease','Psychiatric / Cognitive',
+  // v4.4 additions
+  'Interstitial Lung Disease (ILD)','Parkinsonism / Movement Disorder','Post-transplant (immunosuppressed)',
+  'Pulmonary Hypertension','Dementia / Cognitive Impairment','Epilepsy / Seizure Disorder',
+  'Frailty (clinically evident)','Chronic Steroid / Immunosuppression','Rheumatological / Connective Tissue Disease',
+  'Substance or Alcohol Dependence','Difficult Airway (known/previous)','Morbid Obesity (BMI ≥ 40)'
 ];
 
 // === NEW v4 — On-Call / Out-of-OT reference data ===
@@ -3933,6 +4142,105 @@ function escapeHtml(s) {
 }
 function escapeAttr(s) { return escapeHtml(s); }
 
+/* ============================================================
+   v4.4 — PAEDIATRIC AGE MODEL
+   Age is captured as a value + unit so neonates and infants are
+   recorded honestly (days / weeks / months) instead of rounding to
+   "0 years". patientAge (whole years) is still derived and stored so
+   every pre-existing chart and export keeps working untouched.
+   ============================================================ */
+const DAYS_PER_YEAR = 365.25;
+
+function ageToDays(val, unit) {
+  const v = parseFloat(val);
+  if (isNaN(v) || v < 0) return null;
+  if (unit === 'Days')   return Math.round(v);
+  if (unit === 'Weeks')  return Math.round(v * 7);
+  if (unit === 'Months') return Math.round(v * 30.44);
+  return Math.round(v * DAYS_PER_YEAR);
+}
+
+// Neonate <28 days (departmental definition agreed v4.4).
+function ageBandFor(days) {
+  if (days == null) return '';
+  if (days < 28) return 'Neonate';
+  if (days < 365) return 'Infant';
+  if (days < 12 * DAYS_PER_YEAR) return 'Child';
+  if (days < 18 * DAYS_PER_YEAR) return 'Adolescent';
+  if (days < 65 * DAYS_PER_YEAR) return 'Adult';
+  return 'Elderly';
+}
+
+function ageYearsFrom(days) {
+  return days == null ? null : Math.floor(days / DAYS_PER_YEAR);
+}
+
+// Human-readable age, e.g. "12 days", "5 months", "34y"
+function formatAge(c) {
+  if (c.ageValue && c.ageUnit && c.ageUnit !== 'Years') {
+    return c.ageValue + ' ' + String(c.ageUnit).toLowerCase();
+  }
+  if (c.patientAge != null && c.patientAge !== '') return c.patientAge + 'y';
+  return '';
+}
+
+function updateAgeUi() {
+  const val  = document.getElementById('f_age').value;
+  const unit = getGroupValue('ageUnit') || 'Years';
+  const days = ageToDays(val, unit);
+  const band = ageBandFor(days);
+  const hint = document.getElementById('ageBandHint');
+  const prem = document.getElementById('prematureField');
+  if (hint) {
+    hint.textContent = band
+      ? band + (days != null && days < 365 ? '  ·  ' + days + ' days old' : '')
+      : '';
+  }
+  const isSmall = band === 'Neonate' || band === 'Infant';
+  if (prem) {
+    prem.classList.toggle('hidden', !isSmall);
+    if (!isSmall) {
+      const ex = document.getElementById('f_ex_premature');
+      if (ex) ex.checked = false;
+      const pca = document.getElementById('f_pca_weeks');
+      if (pca) pca.value = '';
+      document.getElementById('pcaField').classList.add('hidden');
+    }
+  }
+}
+
+/* ============================================================
+   v4.4 — COMPLICATIONS & QI PANEL VISIBILITY
+   ============================================================ */
+function anyComplicationTicked() {
+  return document.querySelectorAll('[data-cat="comp"]:checked').length > 0
+      || document.querySelectorAll('[data-cat="compSurg"]:checked').length > 0
+      || document.getElementById('f_comp_other').value.trim().length > 0;
+}
+
+function updateComplicationUi() {
+  const any = anyComplicationTicked();
+  document.getElementById('noCompBtn').classList.toggle('on', !any);
+
+  const surg = Array.from(document.querySelectorAll('[data-cat="compSurg"]:checked')).map(c => c.value);
+  const needsTransfusion = surg.some(v => TRANSFUSION_TRIGGERS.includes(v));
+  document.getElementById('transfusionField').classList.toggle('hidden', !needsTransfusion);
+  document.getElementById('clavienField').classList.toggle('hidden', surg.length === 0);
+  document.getElementById('severityField').classList.toggle('hidden', !any);
+
+  if (!needsTransfusion) {
+    document.querySelectorAll('[data-cat="transfusion"]:checked').forEach(cb => cb.checked = false);
+    document.getElementById('f_transfusion_units').value = '';
+  }
+  if (surg.length === 0) clearGroup('clavien');
+  if (!any) clearGroup('compSeverity');
+}
+
+function updateQiUi() {
+  const any = document.querySelectorAll('[data-cat="qi"]:checked').length > 0;
+  document.getElementById('noQiBtn').classList.toggle('on', !any);
+}
+
 function initForm() {
   document.getElementById('f_date').value = new Date().toISOString().slice(0,10);
 
@@ -3964,6 +4272,11 @@ function initForm() {
   buildCheckGroup('grp-monitoring', MONITORING, 'monitoring');
   buildCheckGroup('grp-other', OTHER_SPECIAL, 'other');
   buildCheckGroup('grp-complications', COMPLICATIONS, 'comp');
+  // v4.4: surgical complication axis, transfusion products, QI indicators, organs
+  buildCheckGroup('grp-complications-surg', COMPLICATIONS_SURGICAL, 'compSurg');
+  buildCheckGroup('grp-transfusion', TRANSFUSION_PRODUCTS, 'transfusion');
+  buildCheckGroup('grp-qi', QI_INDICATORS, 'qi');
+  buildCheckGroup('grp-organs', ORGANS, 'organ');
 
   // v3: populate Second Anaesthetist dropdown
   const secondSel = document.getElementById('f_second_anaesth');
@@ -3976,14 +4289,38 @@ function initForm() {
     });
   }
 
-  // v5 (Ecity): populate Third Anaesthetist dropdown
-  const thirdSel = document.getElementById('f_third_anaesth');
-  if (thirdSel) {
-    DOCTORS.forEach(d => {
-      const o = document.createElement('option');
-      o.value = d.name;
-      o.textContent = d.name;
-      thirdSel.appendChild(o);
+  // v4.4: Third Anaesthetist removed from data entry. Historic values are
+  // still read and displayed everywhere (logbook, shift summary, exports)
+  // so past contributions are never lost.
+
+  // v4.4: Case category — reveal donor type / organ list
+  const catGrp = document.querySelector('[data-group="caseCategory"]');
+  if (catGrp) {
+    catGrp.addEventListener('click', () => {
+      setTimeout(() => {
+        const v = getGroupValue('caseCategory');
+        const isDonor = v === 'Organ retrieval (donor)';
+        const isTx    = v === 'Transplant (recipient)';
+        document.getElementById('donorTypeField').classList.toggle('hidden', !isDonor);
+        document.getElementById('organsField').classList.toggle('hidden', !(isDonor || isTx));
+        if (!isDonor) clearGroup('donorType');
+        if (!(isDonor || isTx)) {
+          document.querySelectorAll('[data-cat="organ"]:checked').forEach(cb => cb.checked = false);
+        }
+      }, 0);
+    });
+  }
+
+  // v4.4: age value / unit interplay
+  const ageInput = document.getElementById('f_age');
+  if (ageInput) ageInput.addEventListener('input', updateAgeUi);
+  const ageUnitGrp = document.querySelector('[data-group="ageUnit"]');
+  if (ageUnitGrp) ageUnitGrp.addEventListener('click', () => setTimeout(updateAgeUi, 0));
+  const exPrem = document.getElementById('f_ex_premature');
+  if (exPrem) {
+    exPrem.addEventListener('change', () => {
+      document.getElementById('pcaField').classList.toggle('hidden', !exPrem.checked);
+      if (!exPrem.checked) document.getElementById('f_pca_weeks').value = '';
     });
   }
 
@@ -4071,23 +4408,28 @@ function initForm() {
     if (!isSurgical) clearGroup('approach');
   });
 
-  document.querySelectorAll('[data-cat="comp"]').forEach(cb => {
-    cb.addEventListener('change', () => {
-      const anyChecked = document.querySelectorAll('[data-cat="comp"]:checked').length > 0
-        || document.getElementById('f_comp_other').value.trim().length > 0;
-      document.getElementById('noCompBtn').classList.toggle('on', !anyChecked);
-    });
+  // v4.4: both complication axes drive the same visibility logic
+  document.querySelectorAll('[data-cat="comp"], [data-cat="compSurg"]').forEach(cb => {
+    cb.addEventListener('change', updateComplicationUi);
   });
-  document.getElementById('f_comp_other').addEventListener('input', () => {
-    const anyChecked = document.querySelectorAll('[data-cat="comp"]:checked').length > 0
-      || document.getElementById('f_comp_other').value.trim().length > 0;
-    document.getElementById('noCompBtn').classList.toggle('on', !anyChecked);
-  });
+  document.getElementById('f_comp_other').addEventListener('input', updateComplicationUi);
 
   document.getElementById('noCompBtn').addEventListener('click', () => {
-    document.querySelectorAll('[data-cat="comp"]:checked').forEach(cb => cb.checked = false);
+    document.querySelectorAll('[data-cat="comp"]:checked, [data-cat="compSurg"]:checked')
+      .forEach(cb => cb.checked = false);
     document.getElementById('f_comp_other').value = '';
+    updateComplicationUi();
     document.getElementById('noCompBtn').classList.add('on');
+  });
+
+  // v4.4: QI indicators
+  document.querySelectorAll('[data-cat="qi"]').forEach(cb => {
+    cb.addEventListener('change', updateQiUi);
+  });
+  document.getElementById('noQiBtn').addEventListener('click', () => {
+    document.querySelectorAll('[data-cat="qi"]:checked').forEach(cb => cb.checked = false);
+    document.getElementById('f_qi_reflection').value = '';
+    updateQiUi();
   });
 
   document.getElementById('f_notes').addEventListener('input', e => {
@@ -4180,9 +4522,38 @@ async function submitCase(e) {
   // v3: monitoring split out separately
   const monitoring = Array.from(document.querySelectorAll('[data-cat="monitoring"]:checked')).map(c => c.value);
   const otherSpecial = Array.from(document.querySelectorAll('[data-cat="other"]:checked')).map(c => c.value);
-  const complications = Array.from(document.querySelectorAll('[data-cat="comp"]:checked')).map(c => c.value);
+  // v4.4: two complication axes. `complications` stays as the combined list
+  // so every existing chart, export and legacy row continues to work.
+  const complicationsAnaes = Array.from(document.querySelectorAll('[data-cat="comp"]:checked')).map(c => c.value);
+  const complicationsSurgical = Array.from(document.querySelectorAll('[data-cat="compSurg"]:checked')).map(c => c.value);
   const compOther = document.getElementById('f_comp_other').value.trim();
+  const complications = [...complicationsAnaes, ...complicationsSurgical];
   if (compOther) complications.push('Other: ' + compOther);
+  const complicationSeverity = complications.length ? (getGroupValue('compSeverity') || '') : '';
+  const clavienDindo = complicationsSurgical.length ? (getGroupValue('clavien') || '') : '';
+  const transfusionProducts = Array.from(document.querySelectorAll('[data-cat="transfusion"]:checked')).map(c => c.value);
+  const tuRaw = parseInt(document.getElementById('f_transfusion_units').value, 10);
+  const transfusionUnits = isNaN(tuRaw) ? null : tuRaw;
+
+  // v4.4: quality indicators
+  const qiIndicators = Array.from(document.querySelectorAll('[data-cat="qi"]:checked')).map(c => c.value);
+  const qiReflection = document.getElementById('f_qi_reflection').value.trim();
+
+  // v4.4: case category / organ donation
+  const caseCategory = getGroupValue('caseCategory') || 'Standard';
+  const donorType = caseCategory === 'Organ retrieval (donor)' ? (getGroupValue('donorType') || '') : '';
+  const organs = (caseCategory === 'Organ retrieval (donor)' || caseCategory === 'Transplant (recipient)')
+    ? Array.from(document.querySelectorAll('[data-cat="organ"]:checked')).map(c => c.value)
+    : [];
+
+  // v4.4: age model
+  const ageUnit = getGroupValue('ageUnit') || 'Years';
+  const ageDays = ageToDays(age, ageUnit);
+  const ageBand = ageBandFor(ageDays);
+  const exPremature = document.getElementById('f_ex_premature').checked &&
+                      (ageBand === 'Neonate' || ageBand === 'Infant');
+  const pcaRaw = parseInt(document.getElementById('f_pca_weeks').value, 10);
+  const pcaWeeks = exPremature && !isNaN(pcaRaw) ? pcaRaw : null;
   const notes = document.getElementById('f_notes').value.trim();
 
   // NEW v2: GA technique + sedation depth (sedationDepth deprecated in v3 but field kept for compatibility)
@@ -4191,12 +4562,11 @@ async function submitCase(e) {
   // NEW v3 fields
   const surgicalApproach = SURGICAL_SPECIALTIES.includes(specialty) ? getGroupValue('approach') : null;
   const secondAnaesthetist = document.getElementById('f_second_anaesth').value || null;
-  // v5 Ecity: third anaesthetist
-  const thirdAnaesthetist = document.getElementById('f_third_anaesth').value || null;
-  // Validate distinct names across A1/A2/A3
-  const anaesNames = [currentUser.name, secondAnaesthetist, thirdAnaesthetist].filter(Boolean);
-  if (new Set(anaesNames).size !== anaesNames.length) {
-    alert('First, Second and Third Anaesthetist must all be different people.');
+  // v4.4: third anaesthetist retired from entry; key retained (always '')
+  // so the sheet column stays in place and historic rows keep their meaning.
+  const thirdAnaesthetist = '';
+  if (secondAnaesthetist && secondAnaesthetist === currentUser.name) {
+    alert('The second anaesthetist must be a different person.');
     return;
   }
   // v5 Ecity: dual / combined techniques
@@ -4263,7 +4633,10 @@ async function submitCase(e) {
   const record = {
     id, date, doctor: currentUser.name, specialty, location,
     procedure, electiveEmergency: ee, anaesthesiaType: atype,
-    addons, asaGrade: asa, patientAge: age ? parseInt(age,10) : null,
+    addons, asaGrade: asa,
+    patientAge: ageYearsFrom(ageDays),
+    ageValue: age === '' ? null : Number(age), ageUnit, ageDays, ageBand,
+    exPremature: exPremature ? 'Yes' : '', pcaWeeks,
     patientSex: sex, durationMin, airway, olv, blocks, blockGuidance,
     lines, otherSpecial, complications, notes,
     // v2 fields
@@ -4276,6 +4649,12 @@ async function submitCase(e) {
     comorbidities,
     // v5 Ecity fields
     thirdAnaesthetist, dualTechnique, postopDispo,
+    // v4.4 fields
+    caseCategory, donorType, organs,
+    complicationsAnaes, complicationsSurgical, complicationSeverity, clavienDindo,
+    transfusionProducts, transfusionUnits,
+    qiIndicators, qiReflection,
+    registryVersion: 'v4.4',
     createdAt: new Date().toISOString()
   };
 
@@ -4349,9 +4728,26 @@ function resetForm() {
   document.querySelectorAll('[data-cat="comorb"]').forEach(cb => cb.checked = false);
   // v3: reset second anaesthetist
   document.getElementById('f_second_anaesth').value = '';
-  // v5 Ecity: reset third anaesthetist & dual-technique tickboxes
-  const tA = document.getElementById('f_third_anaesth'); if (tA) tA.value = '';
   document.querySelectorAll('[data-dual]').forEach(cb => cb.checked = false);
+  // v4.4: reset case category, age model, complication axes and QI
+  ['caseCategory','donorType','ageUnit','clavien','compSeverity'].forEach(clearGroup);
+  const stdCat = document.querySelector('[data-group="caseCategory"] [data-val="Standard"]');
+  if (stdCat) stdCat.classList.add('on');
+  const yrUnit = document.querySelector('[data-group="ageUnit"] [data-val="Years"]');
+  if (yrUnit) yrUnit.classList.add('on');
+  ['donorTypeField','organsField','prematureField','pcaField',
+   'transfusionField','clavienField','severityField'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.classList.add('hidden');
+  });
+  ['compSurg','transfusion','qi','organ'].forEach(cat => {
+    document.querySelectorAll('[data-cat="' + cat + '"]').forEach(cb => cb.checked = false);
+  });
+  ['f_transfusion_units','f_pca_weeks','f_qi_reflection'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = '';
+  });
+  const exP = document.getElementById('f_ex_premature'); if (exP) exP.checked = false;
+  const ageHint = document.getElementById('ageBandHint'); if (ageHint) ageHint.textContent = '';
+  const noQi = document.getElementById('noQiBtn'); if (noQi) noQi.classList.add('on');
   // v2: clear expandable block inputs
   clearBlockInputs();
   // v2: reset specialty Other field
@@ -4523,7 +4919,8 @@ function mapLegacyFields(c) {
 
   // Normalise array-typed fields if they arrived as strings
   ['monitoring','complications','addons','airway','olv','blocks','lines',
-   'otherSpecial','specialAnalgesia','catheters','comorbidities','dualTechnique'
+   'otherSpecial','specialAnalgesia','catheters','comorbidities','dualTechnique',
+   'organs','complicationsAnaes','complicationsSurgical','transfusionProducts','qiIndicators'
   ].forEach(k => {
     if (typeof c[k] === 'string') c[k] = splitArr(c[k]);
   });
@@ -4552,6 +4949,15 @@ async function loadAllCases() {
           try { bd = JSON.parse(bd); } catch { bd = []; }
         }
         if (!Array.isArray(bd)) bd = [];
+        // v4.4: coerce a field to an array whether it arrives as an array,
+        // a delimited string, or nothing at all.
+        const toArr = (v) => {
+          if (Array.isArray(v)) return v;
+          if (typeof v === 'string' && v.length) {
+            return v.split(/\s*\|\s*|\s*;\s*|\s*,\s*/).filter(Boolean);
+          }
+          return [];
+        };
         // v3: parse JSON detail fields
         const parseJson = (val) => {
           if (!val) return null;
@@ -4604,7 +5010,32 @@ async function loadAllCases() {
                 : []),
           postopDispo: c.postopDispo || '',
           durationMin: Number(c.durationMin) || 0,
-          patientAge: c.patientAge === '' || c.patientAge == null ? null : Number(c.patientAge)
+          patientAge: c.patientAge === '' || c.patientAge == null ? null : Number(c.patientAge),
+          // ---- v4.4 fields ----
+          caseCategory: c.caseCategory || 'Standard',
+          donorType: c.donorType || '',
+          organs: toArr(c.organs),
+          complicationsAnaes: toArr(c.complicationsAnaes),
+          complicationsSurgical: toArr(c.complicationsSurgical),
+          complicationSeverity: c.complicationSeverity || '',
+          clavienDindo: c.clavienDindo || '',
+          transfusionProducts: toArr(c.transfusionProducts),
+          transfusionUnits: c.transfusionUnits === '' || c.transfusionUnits == null
+            ? null : Number(c.transfusionUnits),
+          qiIndicators: toArr(c.qiIndicators),
+          qiReflection: c.qiReflection || '',
+          ageValue: c.ageValue === '' || c.ageValue == null ? null : Number(c.ageValue),
+          ageUnit: c.ageUnit || (c.patientAge != null ? 'Years' : ''),
+          ageDays: (c.ageDays === '' || c.ageDays == null)
+            ? (c.patientAge != null && c.patientAge !== '' ? Math.round(Number(c.patientAge) * 365.25) : null)
+            : Number(c.ageDays),
+          ageBand: c.ageBand || ageBandFor(
+            (c.ageDays === '' || c.ageDays == null)
+              ? (c.patientAge != null && c.patientAge !== '' ? Math.round(Number(c.patientAge) * 365.25) : null)
+              : Number(c.ageDays)
+          ),
+          exPremature: c.exPremature || '',
+          pcaWeeks: c.pcaWeeks === '' || c.pcaWeeks == null ? null : Number(c.pcaWeeks)
         };
       });
       // Merge in any pending that haven't synced yet
@@ -5639,6 +6070,9 @@ function renderMyCases() {
   document.getElementById('myRoleCount_primary').textContent = asPrimary.length;
   document.getElementById('myRoleCount_secondary').textContent = asSecondary.length;
 
+  // v4.4: private reflective practice panel (primary cases only)
+  renderMyQiPanel(asPrimary);
+
   // Update sub-tab visual state
   document.getElementById('myRoleTab_primary').className =
     'btn btn-sm ' + (myRoleTab === 'primary' ? 'btn-primary' : 'btn-ghost');
@@ -5737,19 +6171,21 @@ function exportMyLogbookCsv() {
   if (all.length === 0) { showToast('No cases to export', true); return; }
 
   const headers = [
-    'Date','Role','Specialty','Procedure','Location','ASA','Comorbidities',
-    'AnaesthesiaType','GATechnique','DurationMin','Complications',
+    'Date','Role','Specialty','Procedure','Location','ASA','AgeBand','Comorbidities',
+    'AnaesthesiaType','GATechnique','DurationMin','Complications','QIIndicators','Reflection',
     'PrimaryAnaesthetist','SecondAnaesthetist','ThirdAnaesthetist','SurgicalApproach','Notes'
   ];
   const lines = [headers.map(csvCell).join(',')];
   all.forEach(({ role, c }) => {
     lines.push([
       c.date || '', role, c.specialty || '', c.procedure || '', c.location || '',
-      c.asaGrade || '',
+      c.asaGrade || '', c.ageBand || '',
       (c.comorbidities || []).join('; '),
       c.anaesthesiaType || '', c.gaTechnique || '',
       c.durationMin || '',
       (c.complications || []).join('; '),
+      (c.qiIndicators || []).join('; '),
+      role === 'Primary' ? (c.qiReflection || '') : '',
       c.doctor || '', c.secondAnaesthetist || '', c.thirdAnaesthetist || '',
       c.surgicalApproach || '', (c.notes || '').replace(/\s+/g,' ')
     ].map(csvCell).join(','));
@@ -5776,6 +6212,22 @@ function renderCaseDetailHtml(c) {
   if (c.patientAge || c.patientSex) {
     const pt = [c.patientAge ? c.patientAge + 'y' : null, c.patientSex].filter(Boolean).join(' · ');
     if (pt) rows.push(['Patient', escapeHtml(pt)]);
+  }
+  // v4.4: age band / prematurity
+  const ageTxt = formatAge(c);
+  if (ageTxt && c.ageBand) {
+    let a = ageTxt + '  ·  ' + c.ageBand;
+    if (c.exPremature === 'Yes') {
+      a += '  ·  ex-premature' + (c.pcaWeeks ? ' (PCA ' + c.pcaWeeks + ' wk)' : '');
+    }
+    rows.push(['Age band', escapeHtml(a)]);
+  }
+  // v4.4: organ donation / transplant
+  if (c.caseCategory && c.caseCategory !== 'Standard') {
+    let cat = c.caseCategory;
+    if (c.donorType) cat += '  ·  ' + c.donorType;
+    if (Array.isArray(c.organs) && c.organs.length) cat += '  ·  ' + c.organs.join(', ');
+    rows.push(['Case category', escapeHtml(cat)]);
   }
   // v4.3: comorbidities
   if (Array.isArray(c.comorbidities) && c.comorbidities.length) {
@@ -5845,7 +6297,27 @@ function renderCaseDetailHtml(c) {
   if (c.lines && c.lines.length) rows.push(['Invasive Lines', chipHtml(c.lines)]);
   if (c.monitoring && c.monitoring.length) rows.push(['Monitoring', chipHtml(c.monitoring)]);
   if (c.otherSpecial && c.otherSpecial.length) rows.push(['Other special', chipHtml(c.otherSpecial)]);
-  if (c.complications && c.complications.length) rows.push(['Complications', chipHtml(c.complications, 'var(--danger-bg)', 'var(--danger)')]);
+  // v4.4: two complication axes shown separately where available
+  if (Array.isArray(c.complicationsAnaes) && c.complicationsAnaes.length) {
+    rows.push(['Complications — anaesthesia', chipHtml(c.complicationsAnaes, 'var(--danger-bg)', 'var(--danger)')]);
+  }
+  if (Array.isArray(c.complicationsSurgical) && c.complicationsSurgical.length) {
+    rows.push(['Complications — surgical', chipHtml(c.complicationsSurgical, '#FFF3E0', '#E65100')]);
+  }
+  if (!((c.complicationsAnaes || []).length || (c.complicationsSurgical || []).length)
+      && c.complications && c.complications.length) {
+    rows.push(['Complications', chipHtml(c.complications, 'var(--danger-bg)', 'var(--danger)')]);
+  }
+  if (c.complicationSeverity) rows.push(['Severity', escapeHtml(c.complicationSeverity)]);
+  if (c.clavienDindo) rows.push(['Clavien–Dindo', escapeHtml('Grade ' + c.clavienDindo)]);
+  if (Array.isArray(c.transfusionProducts) && c.transfusionProducts.length) {
+    const t = c.transfusionProducts.join(', ') + (c.transfusionUnits ? '  ·  ' + c.transfusionUnits + ' unit(s)' : '');
+    rows.push(['Transfusion', escapeHtml(t)]);
+  }
+  // v4.4: QI indicators
+  if (Array.isArray(c.qiIndicators) && c.qiIndicators.length) {
+    rows.push(['Quality indicators', chipHtml(c.qiIndicators, '#FFF8E1', '#8A6A2A')]);
+  }
   if (c.notes) rows.push(['Notes', escapeHtml(c.notes)]);
 
   if (!rows.length) return '<div style="color:var(--text-muted);font-size:13px;">No additional details recorded.</div>';
@@ -5958,7 +6430,7 @@ function initDashboardFilters() {
   window.__SPEC_PRESETS = SPEC_PRESETS;
   refreshSpecialtyFilter();
 
-  const locs = ['OT 1','OT 2','OT 3','OT 4','OT 5','OT 6','OT 7','OT 8','OB 1','OB 2','Labour Room','MICU','SICU','CCU','PICU','NICU','MRI','MRI + BERA','CT','Cath Lab','Bronchoscopy','Endoscopy','Preoperative Bay / PACU','ER','Ward','Other'];
+  const locs = ['OT 1','OT 2','OT 3','OT 4','OT 5','OT 6','OT 7','OT 8','IVF OT','OB 1','OB 2','Labour Room','MICU','SICU','CCU','PICU','NICU','MRI','MRI + BERA','CT','Cath Lab','Bronchoscopy','Endoscopy','Preoperative Bay / PACU','ER','Ward','Other'];
   const locSel = document.getElementById('flt_location');
   locs.forEach(l => { const o = document.createElement('option'); o.value = l; o.textContent = l; locSel.appendChild(o); });
 
@@ -6006,6 +6478,7 @@ function renderDashboard() {
   renderCharts();
   renderDataTable();
   renderSecondAnaesthetistPanel(); // v4
+  renderQiPanel(); // v4.4: quality indicator panel
   renderShift24(); // v5 Ecity: 24-hour shift summary
   if (typeof updateDashWelcomeStats === 'function') updateDashWelcomeStats(); // v4.2
 
@@ -6037,6 +6510,22 @@ function renderSummary() {
   const multiPct = total > 0 ? ((multi / total) * 100).toFixed(1) : '0';
   const multiEl = document.getElementById('stat_multimorbid');
   if (multiEl) multiEl.innerHTML = multiPct + '<span class="stat-suffix">%</span>';
+
+  // v4.4: QI flag rate, paediatric volume, transfused cases
+  const qiFlagged = filteredCases.filter(c => (c.qiIndicators || []).length > 0).length;
+  const qiPct = total > 0 ? ((qiFlagged / total) * 100).toFixed(1) : '0';
+  const qiEl = document.getElementById('stat_qirate');
+  if (qiEl) qiEl.innerHTML = qiPct + '<span class="stat-suffix">%</span>';
+
+  const paeds = filteredCases.filter(c =>
+    ['Neonate','Infant','Child'].includes(c.ageBand)).length;
+  const paedsEl = document.getElementById('stat_paeds');
+  if (paedsEl) paedsEl.textContent = paeds;
+
+  const transfused = filteredCases.filter(c =>
+    (c.transfusionProducts || []).length > 0).length;
+  const trEl = document.getElementById('stat_transfused');
+  if (trEl) trEl.textContent = transfused;
 }
 
 /* ============================================================
@@ -6142,6 +6631,9 @@ function renderCharts() {
   renderCh16(); renderCh17(); renderCh18(); renderCh19(); renderCh20();
   // v4.3 charts
   renderCh21(); renderCh22();
+  // v4.4 charts
+  renderCh23(); renderCh24(); renderCh25(); renderCh26();
+  renderQiCharts();
 }
 
 function lastNMonths(n) {
@@ -6670,6 +7162,269 @@ function renderCh22() {
   });
 }
 
+/* ============================================================
+   v4.4 CHARTS
+   ============================================================ */
+
+// ㉓ Age band distribution — ordered clinically, not alphabetically
+function renderCh23() {
+  const canvas = document.getElementById('ch23');
+  if (!canvas) return;
+  const order = ['Neonate','Infant','Child','Adolescent','Adult','Elderly'];
+  const m = {};
+  order.forEach(o => m[o] = 0);
+  let unknown = 0;
+  filteredCases.forEach(c => {
+    if (c.ageBand && m.hasOwnProperty(c.ageBand)) m[c.ageBand]++;
+    else unknown++;
+  });
+  const labels = order.filter(o => m[o] > 0);
+  if (labels.length === 0) { drawEmptyChartMessage(canvas, 'No age data yet'); return; }
+  charts.ch23 = new Chart(canvas, {
+    type: 'bar',
+    data: { labels: labels.concat(unknown ? ['Not recorded'] : []),
+      datasets: [{ data: labels.map(l => m[l]).concat(unknown ? [unknown] : []),
+        backgroundColor: paletteN(labels.length + (unknown ? 1 : 0), 'ordinal'),
+        borderRadius: 5, borderSkipped: false }] },
+    options: { ...CHART_DEFAULTS,
+      plugins: { ...CHART_DEFAULTS.plugins, legend: { display: false } },
+      scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }
+  });
+}
+
+// ㉔ Case category
+function renderCh24() {
+  const canvas = document.getElementById('ch24');
+  if (!canvas) return;
+  const m = {};
+  filteredCases.forEach(c => {
+    const k = c.caseCategory || 'Standard';
+    m[k] = (m[k] || 0) + 1;
+  });
+  const entries = Object.entries(m);
+  if (entries.length === 0) { drawEmptyChartMessage(canvas, 'No data yet'); return; }
+  const cmap = {
+    'Standard': '#C9A14A',
+    'Organ retrieval (donor)': '#800020',
+    'Transplant (recipient)': '#722F37'
+  };
+  charts.ch24 = new Chart(canvas, {
+    type: 'doughnut',
+    data: { labels: entries.map(e => e[0]),
+      datasets: [{ data: entries.map(e => e[1]),
+        backgroundColor: entries.map(e => cmap[e[0]] || '#8A5A6A'),
+        borderColor: '#fff', borderWidth: 2 }] },
+    options: { ...CHART_DEFAULTS, cutout: '55%' }
+  });
+}
+
+// ㉕ Clavien–Dindo distribution
+function renderCh25() {
+  const canvas = document.getElementById('ch25');
+  if (!canvas) return;
+  const order = ['I','II','IIIa','IIIb','IVa','IVb','V'];
+  const m = {};
+  filteredCases.forEach(c => {
+    if (c.clavienDindo) m[c.clavienDindo] = (m[c.clavienDindo] || 0) + 1;
+  });
+  const labels = order.filter(o => m[o]);
+  if (labels.length === 0) { drawEmptyChartMessage(canvas, 'No surgical grading recorded'); return; }
+  charts.ch25 = new Chart(canvas, {
+    type: 'bar',
+    data: { labels: labels.map(l => 'Grade ' + l),
+      datasets: [{ data: labels.map(l => m[l]),
+        backgroundColor: paletteN(labels.length, 'ordinal'),
+        borderRadius: 5, borderSkipped: false }] },
+    options: { ...CHART_DEFAULTS,
+      plugins: { ...CHART_DEFAULTS.plugins, legend: { display: false } },
+      scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }
+  });
+}
+
+// ㉖ Blood products used
+function renderCh26() {
+  const canvas = document.getElementById('ch26');
+  if (!canvas) return;
+  const m = {};
+  filteredCases.forEach(c => {
+    (c.transfusionProducts || []).forEach(k => { m[k] = (m[k] || 0) + 1; });
+  });
+  const entries = Object.entries(m).sort((a,b) => b[1] - a[1]);
+  if (entries.length === 0) { drawEmptyChartMessage(canvas, 'No transfusion recorded ✓'); return; }
+  charts.ch26 = new Chart(canvas, {
+    type: 'bar',
+    data: { labels: entries.map(e => e[0]),
+      datasets: [{ data: entries.map(e => e[1]),
+        backgroundColor: paletteN(entries.length, 'ordinal').reverse(),
+        borderRadius: 5, borderSkipped: false }] },
+    options: { ...CHART_DEFAULTS, indexAxis: 'y',
+      plugins: { ...CHART_DEFAULTS.plugins, legend: { display: false } },
+      scales: { x: { beginAtZero: true, ticks: { precision: 0 } } } }
+  });
+}
+
+/* ============================================================
+   v4.4 — QUALITY INDICATOR PANEL
+   ============================================================ */
+function renderQiCharts() {
+  // QI flags per month (run chart)
+  const months = lastNMonths(12);
+  const flagged = months.map(mo =>
+    filteredCases.filter(c => String(c.date || '').startsWith(mo.key) &&
+      (c.qiIndicators || []).length > 0).length);
+  const denom = months.map(mo =>
+    filteredCases.filter(c => String(c.date || '').startsWith(mo.key)).length);
+  const rates = flagged.map((f, i) => denom[i] > 0 ? +((f / denom[i]) * 100).toFixed(1) : 0);
+
+  const c1 = document.getElementById('chQi1');
+  if (c1) {
+    charts.chQi1 = new Chart(c1, {
+      type: 'line',
+      data: { labels: months.map(m => m.label),
+        datasets: [{ label: 'QI flag rate (%)', data: rates,
+          borderColor: '#C0392B', borderWidth: 3,
+          backgroundColor: gradientFill(c1, '#C0392B', 0.35),
+          fill: true, tension: 0.35,
+          pointBackgroundColor: '#C0392B', pointBorderColor: '#fff', pointBorderWidth: 2,
+          pointRadius: 5, pointHoverRadius: 7 }] },
+      options: { ...CHART_DEFAULTS,
+        plugins: { ...CHART_DEFAULTS.plugins, legend: { display: false },
+          tooltip: { ...CHART_DEFAULTS.plugins.tooltip, callbacks: {
+            label: (ctx) => ' ' + ctx.parsed.y + '%  ·  ' + flagged[ctx.dataIndex] + '/' + denom[ctx.dataIndex] + ' cases'
+          } } },
+        scales: { y: { beginAtZero: true, title: { display: true, text: '% of cases' } } } }
+    });
+  }
+
+  // Indicator frequency
+  const tally = {};
+  filteredCases.forEach(c => {
+    (c.qiIndicators || []).forEach(k => { tally[k] = (tally[k] || 0) + 1; });
+  });
+  const entries = Object.entries(tally).sort((a,b) => b[1] - a[1]);
+  const c2 = document.getElementById('chQi2');
+  if (c2) {
+    if (entries.length === 0) drawEmptyChartMessage(c2, 'No QI flags recorded ✓');
+    else charts.chQi2 = new Chart(c2, {
+      type: 'bar',
+      data: { labels: entries.map(e => e[0]),
+        datasets: [{ data: entries.map(e => e[1]),
+          backgroundColor: paletteN(entries.length, 'spectrum'),
+          borderRadius: 5, borderSkipped: false }] },
+      options: { ...CHART_DEFAULTS, indexAxis: 'y',
+        plugins: { ...CHART_DEFAULTS.plugins, legend: { display: false } },
+        scales: { x: { beginAtZero: true, ticks: { precision: 0 } },
+                  y: { ticks: { font: { size: 10 } } } } }
+    });
+  }
+
+  // Severity mix
+  const sev = { 'Minor': 0, 'Major': 0, 'Sentinel': 0 };
+  filteredCases.forEach(c => { if (c.complicationSeverity in sev) sev[c.complicationSeverity]++; });
+  const c3 = document.getElementById('chQi3');
+  if (c3) {
+    const tot = sev.Minor + sev.Major + sev.Sentinel;
+    if (tot === 0) drawEmptyChartMessage(c3, 'No graded complications yet');
+    else charts.chQi3 = new Chart(c3, {
+      type: 'doughnut',
+      data: { labels: ['Minor','Major','Sentinel'],
+        datasets: [{ data: [sev.Minor, sev.Major, sev.Sentinel],
+          backgroundColor: ['#C9A14A','#E07B30','#C0392B'],
+          borderColor: '#fff', borderWidth: 2 }] },
+      options: { ...CHART_DEFAULTS, cutout: '55%' }
+    });
+  }
+}
+
+function renderQiPanel() {
+  const tbody = document.querySelector('#qiTable tbody');
+  if (!tbody) return;
+  const total = filteredCases.length;
+  const den = document.getElementById('qiDenominator');
+  if (den) den.textContent = 'Denominator: ' + total + ' case(s) in current filter';
+
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - 30);
+  const cutoffStr = cutoff.toISOString().slice(0,10);
+
+  const rows = QI_INDICATORS.map(ind => {
+    const hits = filteredCases.filter(c => (c.qiIndicators || []).includes(ind));
+    const recent = hits.filter(c => String(c.date || '') >= cutoffStr).length;
+    return { ind, count: hits.length, recent };
+  }).filter(r => r.count > 0).sort((a,b) => b.count - a.count);
+
+  if (rows.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:24px;color:var(--success);">No quality indicators flagged in this period.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = rows.map(r => {
+    const rate = total > 0 ? ((r.count / total) * 100).toFixed(1) : '0';
+    return `<tr>
+      <td>${escapeHtml(r.ind)}</td>
+      <td class="mono">${r.count}</td>
+      <td class="mono">${rate}%</td>
+      <td class="mono">${r.recent > 0 ? '<span class="badge badge-emergency">' + r.recent + '</span>' : '—'}</td>
+    </tr>`;
+  }).join('');
+}
+
+/* ============================================================
+   v4.4 — PERSONAL REFLECTIVE VIEW (My Cases)
+   Shows the doctor their own indicator profile against an
+   anonymised departmental rate. Never shown to anyone else.
+   ============================================================ */
+function renderMyQiPanel(myCases) {
+  const tbody = document.querySelector('#myQiTable tbody');
+  const summary = document.getElementById('myQiSummary');
+  const reflections = document.getElementById('myReflections');
+  if (!tbody) return;
+
+  const mine = myCases || [];
+  const myTotal = mine.length;
+  const myFlagged = mine.filter(c => (c.qiIndicators || []).length > 0).length;
+  const deptTotal = allCases.length;
+
+  if (summary) {
+    summary.textContent = myTotal === 0
+      ? 'No cases logged yet.'
+      : myFlagged + ' of your ' + myTotal + ' cases (' +
+        ((myFlagged / myTotal) * 100).toFixed(1) + '%) carry a quality flag. ' +
+        'Compare against the department to spot patterns worth reflecting on — ' +
+        'not to keep score.';
+  }
+
+  const rows = QI_INDICATORS.map(ind => {
+    const mineHits = mine.filter(c => (c.qiIndicators || []).includes(ind)).length;
+    const deptHits = allCases.filter(c => (c.qiIndicators || []).includes(ind)).length;
+    return { ind, mineHits, deptRate: deptTotal > 0 ? (deptHits / deptTotal) * 100 : 0 };
+  }).filter(r => r.mineHits > 0);
+
+  if (rows.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:20px;color:var(--success);">No quality indicators flagged on your cases.</td></tr>';
+  } else {
+    tbody.innerHTML = rows.sort((a,b) => b.mineHits - a.mineHits).map(r => {
+      const myRate = myTotal > 0 ? ((r.mineHits / myTotal) * 100).toFixed(1) : '0';
+      return `<tr>
+        <td>${escapeHtml(r.ind)}</td>
+        <td class="mono">${r.mineHits}</td>
+        <td class="mono">${myRate}%</td>
+        <td class="mono" style="color:var(--text-muted);">${r.deptRate.toFixed(1)}%</td>
+      </tr>`;
+    }).join('');
+  }
+
+  if (reflections) {
+    const withNotes = mine.filter(c => c.qiReflection);
+    reflections.innerHTML = withNotes.length === 0 ? '' :
+      '<div style="font-size:12px;font-weight:600;color:var(--teal-dark);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Your reflective notes</div>' +
+      withNotes.slice(0, 10).map(c => `
+        <div style="padding:10px 12px;background:#FBF3F5;border-left:3px solid var(--teal);border-radius:var(--radius-sm);margin-bottom:8px;">
+          <div style="font-size:11px;color:var(--text-muted);font-family:'DM Mono',monospace;">${formatDate(c.date)} · ${escapeHtml(c.specialty || '')}</div>
+          <div style="font-size:13px;margin-top:4px;">${escapeHtml(c.qiReflection)}</div>
+        </div>`).join('');
+  }
+}
+
 function drawEmptyChartMessage(canvas, msg) {
   const ctx = canvas.getContext('2d');
   const rect = canvas.getBoundingClientRect();
@@ -6749,7 +7504,10 @@ function exportCsv() {
     'Addons','ASAGrade','Comorbidities','PatientAge','PatientSex','DurationMin',
     'Airway','OLV','SpecialAnalgesia',
     'Blocks','BlockDetails','BlockGuidance','Catheters',
-    'Lines','Monitoring','OtherSpecial','Complications','PostopDispo','Notes','CreatedAt'
+    'Lines','Monitoring','OtherSpecial','Complications','PostopDispo','Notes','CreatedAt',
+    'CaseCategory','DonorType','Organs','AgeValue','AgeUnit','AgeDays','AgeBand','ExPremature','PCAWeeks',
+    'ComplicationsAnaesthesia','ComplicationsSurgical','ComplicationSeverity','ClavienDindo',
+    'TransfusionProducts','TransfusionUnits','QIIndicators','QICount'
   ];
   const fmtJson = (obj) => obj ? Object.entries(obj).filter(([,v]) => v != null && v !== '').map(([k,v]) => k + ':' + v).join('; ') : '';
   const rows = filteredCases.map(c => [
@@ -6772,7 +7530,15 @@ function exportCsv() {
     (c.lines || []).join('; '),
     (c.monitoring || []).join('; '),
     (c.otherSpecial || []).join('; '),
-    (c.complications || []).join('; '), c.postopDispo || '', c.notes || '', c.createdAt
+    (c.complications || []).join('; '), c.postopDispo || '', c.notes || '', c.createdAt,
+    c.caseCategory || '', c.donorType || '', (c.organs || []).join('; '),
+    c.ageValue == null ? '' : c.ageValue, c.ageUnit || '',
+    c.ageDays == null ? '' : c.ageDays, c.ageBand || '',
+    c.exPremature || '', c.pcaWeeks == null ? '' : c.pcaWeeks,
+    (c.complicationsAnaes || []).join('; '), (c.complicationsSurgical || []).join('; '),
+    c.complicationSeverity || '', c.clavienDindo || '',
+    (c.transfusionProducts || []).join('; '), c.transfusionUnits == null ? '' : c.transfusionUnits,
+    (c.qiIndicators || []).join('; '), (c.qiIndicators || []).length
   ]);
 
   const esc = v => {
