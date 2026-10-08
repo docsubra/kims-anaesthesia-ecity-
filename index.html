@@ -2351,7 +2351,7 @@ table.data-table {
     <div class="login-logo">⚕</div>
     <div class="login-hospital">KIMS Hospital · Electronic City</div>
     <h1>Anaesthesia Department</h1>
-    <p class="sub">Case Registry &amp; Statistics <span style="opacity:0.6;">· v4.4</span></p>
+    <p class="sub">Case Registry &amp; Statistics <span style="opacity:0.6;">· v4.6</span></p>
     <label for="doctorSelect">Select your name</label>
     <select id="doctorSelect">
       <option value="">-- Choose doctor --</option>
@@ -2372,7 +2372,7 @@ table.data-table {
         <span class="nav-brand-icon">⚕</span>
         <div class="nav-brand-text">
           <span class="nav-brand-hospital">KIMS Ecity</span>
-          <span class="nav-brand-name">Anaesthesia Registry <span style="opacity:0.55;font-weight:400;">v4.4</span></span>
+          <span class="nav-brand-name">Anaesthesia Registry <span style="opacity:0.55;font-weight:400;">v4.6</span></span>
         </div>
       </div>
       <button class="nav-btn" data-view="entry">✎ <span class="lbl-long">OT Case</span></button>
@@ -2815,14 +2815,26 @@ table.data-table {
               <div style="font-size:11px;color:var(--text-muted);font-weight:600;margin:8px 0 6px;">Upper Limb</div>
               <div class="chk-grid" id="grp-blocks-ul"></div>
               <div style="font-size:11px;color:var(--text-muted);font-weight:600;margin:12px 0 6px;">Lower Limb</div>
+              <div style="font-size:11px;color:var(--text-muted);margin:-2px 0 6px;line-height:1.4;">Femoral triangle = injected above the apex (where sartorius crosses adductor longus). Adductor canal = below the apex.</div>
               <div class="chk-grid" id="grp-blocks-ll"></div>
-              <div style="font-size:11px;color:var(--text-muted);font-weight:600;margin:12px 0 6px;">Trunk</div>
+              <!-- v4.6: trunk split into the three ASRA–ESRA consensus regions -->
+              <div style="font-size:11px;color:var(--text-muted);font-weight:600;margin:12px 0 6px;">Chest Wall</div>
+              <div style="font-size:11px;color:var(--text-muted);margin:-2px 0 6px;line-height:1.4;">PECS II = interpectoral + pectoserratus: tick both.</div>
               <div class="chk-grid" id="grp-blocks-trunk"></div>
-              <div style="font-size:11px;color:var(--text-muted);font-weight:600;margin:12px 0 6px;">Head / Neck</div>
+              <div style="font-size:11px;color:var(--text-muted);font-weight:600;margin:12px 0 6px;">Abdominal Wall</div>
+              <div class="chk-grid" id="grp-blocks-abdo"></div>
+              <div style="font-size:11px;color:var(--text-muted);font-weight:600;margin:12px 0 6px;">Paraspinal</div>
+              <div class="chk-grid" id="grp-blocks-spine"></div>
+              <!-- v4.5: caudal moved out of "Other" into its own visible group -->
+              <div style="font-size:11px;color:var(--text-muted);font-weight:600;margin:12px 0 6px;">Caudal &amp; Perineal</div>
+              <div class="chk-grid" id="grp-blocks-caudal"></div>
+              <div style="font-size:11px;color:var(--text-muted);font-weight:600;margin:12px 0 6px;">Head / Neck / Airway</div>
               <div class="chk-grid" id="grp-blocks-hn"></div>
               <!-- v3: Ophthalmic blocks group hidden (kept structurally for fallback) -->
               <div class="chk-grid hidden" id="grp-blocks-eye"></div>
-              <div style="font-size:11px;color:var(--text-muted);font-weight:600;margin:12px 0 6px;">Other Blocks</div>
+              <div style="font-size:11px;color:var(--text-muted);font-weight:600;margin:12px 0 6px;">Infiltration &amp; IV Regional</div>
+              <div class="chk-grid" id="grp-blocks-infil"></div>
+              <div style="font-size:11px;color:var(--text-muted);font-weight:600;margin:12px 0 6px;">Sympathetic &amp; Pain</div>
               <div class="chk-grid" id="grp-blocks-other"></div>
 
               <div class="block-guidance hidden" id="blockGuidance">
@@ -3645,13 +3657,35 @@ table.data-table {
 const API_URL = 'https://script.google.com/macros/s/AKfycbxUFBoCwwoHNE7rCHh8e9RejYdv8Qq-iA3C36rt7XIBCCcLKTgxPlDEBBhqeuIw1RW-Xg/exec';
 
 /* ============================================================
-   DOCTORS & REFERENCE DATA
+   ✎ EDITABLE SETTINGS — v4.6
+   Everything between this box and "END OF EDITABLE SETTINGS" can be
+   changed safely. Nothing else in the file needs to be touched.
+   ------------------------------------------------------------
+   RULES
+   • Every name sits inside single quotes '...' and is followed by a
+     comma, except the last item in a list. Keep that pattern exactly.
+   • Never use a comma ( , ), semicolon ( ; ) or bar ( | ) INSIDE a name.
+   • If a name contains an apostrophe, write it as \'  e.g. 'Dr D\'Souza'.
+
+   ADD A DOCTOR      Copy any line in DOCTORS and change the name.
+   DOCTOR LEAVES     MOVE their line from DOCTORS to FORMER_DOCTORS,
+                     unchanged. Never retype or respell it, or their
+                     past cases will stop matching.
+   ADD A BLOCK       Add the new name to the right group list below.
+   RENAME A BLOCK    Change it in the list AND add a line to
+                     BLOCK_ALIASES:  'Old name': 'New name',
+                     so past cases are counted under the new name.
+
+   AFTER EDITING     Save → upload index.html to GitHub → wait ~2 min →
+                     reopen the app (Ctrl+Shift+R on a computer).
    ============================================================ */
+
+// ---- Doctors who can log in (active roster) ----
+// role: 'HOD' or 'Lead' unlocks the dashboards. Leave role out for everyone else.
 const DOCTORS = [
   { name: 'Dr Subramanyam Mahankali', role: 'HOD' },
   { name: 'Dr Vivek Rayadurg',        role: 'Lead' },
   { name: 'Dr Srivatsa Komarlu' },
-  { name: 'Dr Anilkumar' },
   { name: 'Dr Santosh BS' },
   { name: 'Dr Vineeth G' },
   { name: 'Dr Ankitha Choudhary' },
@@ -3659,21 +3693,240 @@ const DOCTORS = [
   { name: 'Dr Deepika BD' },
   { name: 'Dr Hemalakshmi' },
   { name: 'Dr Akshara Santosh' },
+  { name: 'Dr Sonika Panwar' },
+  { name: 'Dr Deepti Manjunath' }
+];
+
+// ---- Former members ----
+// Hidden from login and data entry; still shown in dashboard filters so
+// their past cases stay searchable. Spellings must match the Sheet exactly.
+const FORMER_DOCTORS = [
+  { name: 'Dr Anilkumar' },
   { name: 'Dr RajKiran' },
   { name: 'Dr Pradhan' }
 ];
+
+// ---- Regional block catalogue ----
+// Names follow the ASRA–ESRA Delphi consensus nomenclature:
+//   Part 1 (2021) — chest wall, abdominal wall and paraspinal blocks
+//   Part 2 (2024) — upper and lower limb blocks
+// Approach or variant in brackets; familiar older names kept in brackets
+// where the standard name is new, to help people find them.
+const BLOCKS_UL = [
+  'Interscalene brachial plexus',
+  'Superior trunk',
+  'Supraclavicular brachial plexus',
+  'Infraclavicular brachial plexus (costoclavicular)',
+  'Infraclavicular brachial plexus (coracoid)',
+  'Infraclavicular brachial plexus (retroclavicular)',
+  'Clavipectoral fascial plane',
+  'Axillary brachial plexus',
+  'Suprascapular nerve',
+  'Axillary nerve',
+  'Intercostobrachial nerve',
+  'Median / radial / ulnar nerves (elbow)',
+  'Median / radial / ulnar nerves (forearm)',
+  'Median / radial / ulnar nerves (wrist)',
+  'Digital nerves',
+  'WALANT infiltration'
+];
+const BLOCKS_LL = [
+  'Lumbar plexus (psoas compartment)',
+  'Fascia iliaca (suprainguinal)',
+  'Fascia iliaca (infrainguinal)',
+  'Pericapsular nerve group (PENG)',
+  'Femoral nerve',
+  'Femoral triangle',
+  'Adductor canal',
+  'Saphenous nerve',
+  'Lateral femoral cutaneous nerve (LFCN)',
+  'Obturator nerve',
+  'Genicular nerves',
+  'IPACK (popliteal artery–knee capsule)',
+  'Sacral plexus',
+  'Sciatic nerve (transgluteal)',
+  'Sciatic nerve (infragluteal)',
+  'Sciatic nerve (anterior)',
+  'Sciatic nerve (popliteal)',
+  'Tibial nerve',
+  'Sural nerve',
+  'Ankle block'
+];
+const BLOCKS_CHEST = [
+  'Interpectoral plane (PECS I)',
+  'Pectoserratus plane (PECS II)',
+  'Serratus anterior plane (superficial)',
+  'Serratus anterior plane (deep)',
+  'Superficial parasternal intercostal plane (pecto-intercostal)',
+  'Deep parasternal intercostal plane (transversus thoracis)',
+  'Rhomboid intercostal plane',
+  'Intercostal nerve'
+];
+const BLOCKS_ABDO = [
+  'Transversus abdominis plane (TAP)',
+  'Rectus sheath',
+  'Quadratus lumborum (lateral · QL1)',
+  'Quadratus lumborum (posterior · QL2)',
+  'Quadratus lumborum (anterior · QL3)',
+  'Transversalis fascia plane',
+  'Ilioinguinal–iliohypogastric',
+  'External oblique intercostal'
+];
+const BLOCKS_SPINE = [
+  'Erector spinae plane (ESP)',
+  'Sacral erector spinae plane',
+  'Thoracic paravertebral',
+  'Retrolaminar',
+  'Thoracolumbar interfascial plane (TLIP)'
+];
+const BLOCKS_CAUDAL = [
+  'Caudal block',
+  'Penile block',
+  'Pudendal nerve'
+];
+const BLOCKS_HN = [
+  'Scalp block',
+  'Supraorbital & supratrochlear nerves',
+  'Greater occipital nerve',
+  'Superficial cervical plexus',
+  'Intermediate cervical plexus',
+  'Deep cervical plexus',
+  'Great auricular nerve',
+  'Maxillary / Infraorbital',
+  'Mandibular / Inferior alveolar',
+  'Sphenopalatine ganglion',
+  'Glossopharyngeal (awake airway)',
+  'Superior laryngeal / Transtracheal (awake airway)',
+  'Peribulbar',
+  'Retrobulbar',
+  'Sub-Tenon'
+];
+const BLOCKS_INFIL = [
+  'Wound infiltration (surgeon)',
+  'Wound catheter (continuous infiltration)',
+  'Local infiltration analgesia (LIA / periarticular)',
+  'Intra-articular',
+  'IV regional anaesthesia (Bier block)'
+];
+const BLOCKS_OTHER = [
+  'Stellate ganglion',
+  'Coeliac plexus',
+  'Lumbar sympathetic',
+  'Superior hypogastric plexus',
+  'Ganglion impar',
+  'Trigger point / myofascial'
+];
+const BLOCKS_EYE = []; // v3: ophthalmic group retired (eye blocks live in Head / Neck)
+
+// ---- Old name → new name ----
+// Past cases are DISPLAYED and COUNTED under the new name. The Sheet itself
+// is never changed. Only old names that meant exactly one block are mapped.
+const BLOCK_ALIASES = {
+  'Interscalene': 'Interscalene brachial plexus',
+  'Supraclavicular': 'Supraclavicular brachial plexus',
+  'Costoclavicular': 'Infraclavicular brachial plexus (costoclavicular)',
+  'Axillary': 'Axillary brachial plexus',
+  'Suprascapular': 'Suprascapular nerve',
+  'Axillary nerve (circumflex)': 'Axillary nerve',
+  'Intercostobrachial': 'Intercostobrachial nerve',
+  'Elbow block (median/radial/ulnar)': 'Median / radial / ulnar nerves (elbow)',
+  'Peripheral nerve block (forearm/hand)': 'Median / radial / ulnar nerves (forearm)',
+  'Wrist block': 'Median / radial / ulnar nerves (wrist)',
+  'Digital block': 'Digital nerves',
+  'Lumbar plexus': 'Lumbar plexus (psoas compartment)',
+  'Psoas compartment': 'Lumbar plexus (psoas compartment)',
+  'Fascia Iliaca': 'Fascia iliaca (infrainguinal)',
+  'Supra-inguinal Fascia Iliaca': 'Fascia iliaca (suprainguinal)',
+  'PENG': 'Pericapsular nerve group (PENG)',
+  'Saphenous': 'Saphenous nerve',
+  'Obturator': 'Obturator nerve',
+  'Genicular nerve block': 'Genicular nerves',
+  'iPACK': 'IPACK (popliteal artery–knee capsule)',
+  'Sub-gluteal sciatic': 'Sciatic nerve (transgluteal)',
+  'Pecto-intercostal': 'Superficial parasternal intercostal plane (pecto-intercostal)',
+  'Intercostal': 'Intercostal nerve',
+  'TAP block': 'Transversus abdominis plane (TAP)',
+  'Rectus Sheath': 'Rectus sheath',
+  'Transversalis fascia': 'Transversalis fascia plane',
+  'Ilioinguinal / Iliohypogastric': 'Ilioinguinal–iliohypogastric',
+  'ESPB': 'Erector spinae plane (ESP)',
+  'Sacral ESP': 'Sacral erector spinae plane',
+  'Paravertebral': 'Thoracic paravertebral',
+  'TLIP (thoracolumbar interfascial)': 'Thoracolumbar interfascial plane (TLIP)',
+  'Pudendal': 'Pudendal nerve',
+  'Greater occipital': 'Greater occipital nerve',
+  'Sphenopalatine': 'Sphenopalatine ganglion',
+  'BIER block': 'IV regional anaesthesia (Bier block)',
+  // v4.5 interim names (safeguard only)
+  'Lateral femoral cutaneous (LFCN)': 'Lateral femoral cutaneous nerve (LFCN)',
+  'Transversus thoracis plane (deep parasternal)': 'Deep parasternal intercostal plane (transversus thoracis)',
+  'Supraorbital / Supratrochlear': 'Supraorbital & supratrochlear nerves',
+  'Great auricular': 'Great auricular nerve'
+};
+
+// ---- Old names that covered more than one block ----
+// They cannot be reassigned honestly, so past cases keep them, shown with
+// "(legacy)" so they stand apart from the precise new names on the dashboard.
+const LEGACY_BLOCKS = [
+  'Femoral/Adductor canal',
+  'Sciatic/Popliteal',
+  'Infraclavicular',
+  'PECS I/II',
+  'Serratus Anterior Plane (SAP)',
+  'Parasternal',
+  'Quadratus Lumborum (QL)',
+  'Cervical plexus'
+];
+
+/* ================== END OF EDITABLE SETTINGS ================== */
+
+// Populate a dashboard doctor filter: active names first, former names in
+// their own labelled group underneath.
+function appendDoctorFilterOptions(sel) {
+  DOCTORS.forEach(d => {
+    const o = document.createElement('option');
+    o.value = d.name; o.textContent = d.name;
+    sel.appendChild(o);
+  });
+  if (FORMER_DOCTORS.length) {
+    const og = document.createElement('optgroup');
+    og.label = 'Former members';
+    FORMER_DOCTORS.forEach(d => {
+      const o = document.createElement('option');
+      o.value = d.name; o.textContent = d.name + ' (former)';
+      og.appendChild(o);
+    });
+    sel.appendChild(og);
+  }
+}
+
+// v4.6 — map a stored block name to its current standard name (display only).
+function canonicalBlockName(name) {
+  const k = String(name == null ? '' : name).trim();
+  if (Object.prototype.hasOwnProperty.call(BLOCK_ALIASES, k)) return BLOCK_ALIASES[k];
+  if (LEGACY_BLOCKS.includes(k)) return k + ' (legacy)';
+  return k;
+}
+// v4.6 — apply the mapping to a case's block list and block details.
+// Idempotent; duplicates (e.g. lumbar plexus + psoas compartment) collapse to one.
+function canonicaliseCaseBlocks(c) {
+  if (!c || typeof c !== 'object') return c;
+  const out = { ...c };
+  if (Array.isArray(c.blocks)) {
+    out.blocks = [...new Set(c.blocks.map(canonicalBlockName).filter(Boolean))];
+  }
+  if (Array.isArray(c.blockDetails)) {
+    out.blockDetails = c.blockDetails.map(d =>
+      (d && typeof d === 'object' && d.block) ? { ...d, block: canonicalBlockName(d.block) } : d);
+  }
+  return out;
+}
 
 // Roles with full dashboard / data / reports access (HOD and Lead)
 const PRIVILEGED_ROLES = ['HOD', 'Lead'];
 
 const AIRWAY = ['Video Laryngoscopy','McCoy Laryngoscope blade','Fibreoptic Bronchoscope (awake)','Fibreoptic Bronchoscope (asleep)','Difficult Airway (unanticipated)','Surgical Airway','Rapid Sequence Induction (RSI)'];
 const OLV = ['Double-Lumen ETT (left)','Double-Lumen ETT (right)','Bronchial Blocker','One-lung ventilation (other)'];
-const BLOCKS_UL = ['Interscalene','Supraclavicular','Costoclavicular','Infraclavicular','Axillary','Peripheral nerve block (forearm/hand)','Suprascapular','Axillary nerve (circumflex)','Elbow block (median/radial/ulnar)','Wrist block','Digital block','Intercostobrachial','WALANT infiltration'];
-const BLOCKS_LL = ['Femoral/Adductor canal','Sciatic/Popliteal','Fascia Iliaca','Supra-inguinal Fascia Iliaca','PENG','Lumbar plexus','Sacral plexus','iPACK','Ankle block','Obturator','Genicular nerve block','Saphenous','Sub-gluteal sciatic','Psoas compartment','Tibial nerve','Sural nerve'];
-const BLOCKS_TRUNK = ['TAP block','ESPB','PECS I/II','Pecto-intercostal','External oblique intercostal','Paravertebral','Quadratus Lumborum (QL)','Rectus Sheath','Serratus Anterior Plane (SAP)','Intercostal','Ilioinguinal / Iliohypogastric','Retrolaminar','Transversalis fascia','Sacral ESP','TLIP (thoracolumbar interfascial)','Pudendal','Parasternal'];
-const BLOCKS_HN = ['Scalp block','Cervical plexus','Superficial cervical plexus','Deep cervical plexus','Maxillary / Infraorbital','Mandibular / Inferior alveolar','Greater occipital','Sphenopalatine','Superior laryngeal / Transtracheal (awake airway)','Peribulbar','Retrobulbar','Sub-Tenon'];
-const BLOCKS_EYE = []; // v3: Ophthalmic blocks removed
-const BLOCKS_OTHER = ['BIER block','Wound infiltration (surgeon)','Wound catheter (continuous infiltration)','Caudal block','Penile block','Intra-articular','Stellate ganglion','Coeliac plexus','Lumbar sympathetic','Trigger point / myofascial'];
 const LINES = ['Arterial line — Radial','Arterial line — Femoral/other','CVC — Internal Jugular','CVC — Subclavian','CVC — Femoral','PICC','Introducer/Cordis sheath','Pulmonary Artery Catheter (PAC/Swan-Ganz)','Pacing wire','Intraosseous (IO) access'];
 const MONITORING = ['Intraoperative TOE/TEE','BIS','Entropy','EEG monitoring','SSEP/MEP neuromonitoring','NIRS / Cerebral oximetry','Continuous Cardiac Output (PiCCO/LiDCO/FloTrac)','Train-of-Four (TOF)'];
 const OTHER_SPECIAL = ['Cell salvage (intraop)','Deliberate hypotension','Awake craniotomy','Total IV Anaesthesia (TIVA)','High-frequency jet ventilation','Prone positioning (planned)'];
@@ -4268,9 +4521,13 @@ function initForm() {
   // v2: blocks use expandable detail panels
   buildBlockGroup('grp-blocks-ul', BLOCKS_UL);
   buildBlockGroup('grp-blocks-ll', BLOCKS_LL);
-  buildBlockGroup('grp-blocks-trunk', BLOCKS_TRUNK);
+  buildBlockGroup('grp-blocks-trunk', BLOCKS_CHEST);   // v4.6: chest wall
+  buildBlockGroup('grp-blocks-abdo', BLOCKS_ABDO);     // v4.6
+  buildBlockGroup('grp-blocks-spine', BLOCKS_SPINE);   // v4.6
+  buildBlockGroup('grp-blocks-caudal', BLOCKS_CAUDAL); // v4.5
   buildBlockGroup('grp-blocks-hn', BLOCKS_HN);
   buildBlockGroup('grp-blocks-eye', BLOCKS_EYE); // empty in v3
+  buildBlockGroup('grp-blocks-infil', BLOCKS_INFIL);   // v4.5
   buildBlockGroup('grp-blocks-other', BLOCKS_OTHER);
   initBlockInteractions();
 
@@ -5057,6 +5314,9 @@ async function loadAllCases() {
       setSyncDot('error');
     }
   }
+  // v4.6: show and count past cases under the current standard block names
+  // (display only — the Sheet is never rewritten).
+  allCases = allCases.map(canonicaliseCaseBlocks);
   allCases.sort((a,b) => (b.date || '').localeCompare(a.date || '') || (b.createdAt || '').localeCompare(a.createdAt || ''));
 }
 
@@ -5437,11 +5697,7 @@ function renderOnCallDashboard() {
   // Populate doctor filter dropdown
   const doctorSel = document.getElementById('oc_flt_doctor');
   if (doctorSel.options.length <= 1) {
-    DOCTORS.forEach(d => {
-      const o = document.createElement('option');
-      o.value = d.name; o.textContent = d.name;
-      doctorSel.appendChild(o);
-    });
+    appendDoctorFilterOptions(doctorSel); // v4.5: active + former
   }
   // Set default handover date to today
   if (!document.getElementById('oc_handoverDate').value) {
@@ -6426,9 +6682,7 @@ function refreshSpecialtyFilter() {
 
 function initDashboardFilters() {
   const doctorSel = document.getElementById('flt_doctor');
-  DOCTORS.forEach(d => {
-    const o = document.createElement('option'); o.value = d.name; o.textContent = d.name; doctorSel.appendChild(o);
-  });
+  appendDoctorFilterOptions(doctorSel); // v4.5: active + former
 
   // v2: Preset specialties grouped. Actual data may have additional "Other"
   // specialties typed in — those get added dynamically in refreshSpecialtyFilter()
@@ -7742,9 +7996,17 @@ document.addEventListener('DOMContentLoaded', async () => {
   const saved = sessionStorage.getItem('currentUser');
   if (saved) {
     try {
-      currentUser = JSON.parse(saved);
-      showApp();
-    } catch {}
+      // v4.5: re-validate against the active roster and re-derive the role
+      // from it, so a stale session (or a departed member) cannot carry over.
+      const parsed = JSON.parse(saved);
+      const doc = DOCTORS.find(d => d.name === (parsed && parsed.name));
+      if (doc) {
+        currentUser = { name: doc.name, role: doc.role || 'doctor' };
+        showApp();
+      } else {
+        sessionStorage.removeItem('currentUser');
+      }
+    } catch { sessionStorage.removeItem('currentUser'); }
   }
 });
 </script>
